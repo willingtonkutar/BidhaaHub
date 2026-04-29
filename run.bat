@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "PROJECT_ROOT=%~dp0"
+for %%I in ("%~dp0") do set "PROJECT_ROOT=%%~fI"
 for %%I in ("%PROJECT_ROOT%..") do set "WORKSPACE_ROOT=%%~fI"
 set "PYTHON=%WORKSPACE_ROOT%\.venv\Scripts\python.exe"
 

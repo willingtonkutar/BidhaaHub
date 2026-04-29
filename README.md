@@ -83,6 +83,18 @@ run.bat
 
 The app will start on `http://127.0.0.1:8000`.
 
+### Role-Based Login
+
+The web app now starts with a login chooser:
+- Customer: register or log in to browse the shop, cart, checkout, and My Orders
+- Admin/staff: log in to manage products, suppliers, orders, delivery, and payment settings
+
+Default admin credentials for local development:
+- Email: `admin@bidhaahub.local`
+- Password: `Admin123!`
+
+Payment support is scaffolded through `POST /payments/initiate` with provider codes for `cash_on_delivery`, `mpesa_daraja`, `paypal`, and `mock_card`.
+
 If you want to start it manually, use:
 
 ```powershell
@@ -169,12 +181,14 @@ Start with these entities:
 
 ## 8. Frontend Page Plan
 - Login Page
+- Create Account modal
 - Dashboard Page
-- Products Page (table + create/edit form)
+- Products Page (table + create/edit form + Expired Items filter)
 - Suppliers Page
 - Transactions Page
 - Alerts Page
-- Reports Page
+- Reports Page (includes expired items summary)
+- Global footer component on all pages
 
 ## 9. Development Roadmap
 
