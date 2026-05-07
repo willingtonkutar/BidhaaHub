@@ -1,6 +1,11 @@
-from datetime import date, timedelta
+import base64
+import json
+import os
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import sys
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -8,6 +13,7 @@ if __package__ is None or __package__ == "":
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, inspect, text
 from sqlalchemy.orm import Session
 
@@ -35,6 +41,7 @@ from app.schemas import (
     UserRead,
     SupplierCreate,
     SupplierRead,
+    SupplierUpdate,
     TransactionCreate,
     TransactionRead,
     ReportSummary,
@@ -47,28 +54,46 @@ Base.metadata.create_all(bind=engine)
 def migrate_existing_schema() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
-    if "orders" not in existing_tables:
-        return
-
-    order_columns = {column["name"] for column in inspector.get_columns("orders")}
-    additions = [
-        ("user_id", "INTEGER"),
-        ("payment_method", "VARCHAR(40)"),
-        ("payment_status", "VARCHAR(30) DEFAULT 'unpaid'"),
-        ("delivery_method", "VARCHAR(40)"),
-        ("delivery_address", "VARCHAR(255)"),
-        ("delivery_fee", "FLOAT DEFAULT 0.0"),
-    ]
-
     with engine.begin() as connection:
-        for column_name, column_definition in additions:
-            if column_name not in order_columns:
-                connection.execute(text(f"ALTER TABLE orders ADD COLUMN {column_name} {column_definition}"))
+        if "products" in existing_tables:
+            product_columns = {column["name"] for column in inspector.get_columns("products")}
+            if "image_url" not in product_columns:
+                connection.execute(text("ALTER TABLE products ADD COLUMN image_url VARCHAR(500)"))
+
+        if "orders" in existing_tables:
+            order_columns = {column["name"] for column in inspector.get_columns("orders")}
+            order_additions = [
+                ("user_id", "INTEGER"),
+                ("payment_method", "VARCHAR(40)"),
+                ("payment_status", "VARCHAR(30) DEFAULT 'unpaid'"),
+                ("delivery_method", "VARCHAR(40)"),
+                ("delivery_address", "VARCHAR(255)"),
+                ("delivery_fee", "FLOAT DEFAULT 0.0"),
+            ]
+
+            for column_name, column_definition in order_additions:
+                if column_name not in order_columns:
+                    connection.execute(text(f"ALTER TABLE orders ADD COLUMN {column_name} {column_definition}"))
+
+        if "payments" in existing_tables:
+            payment_columns = {column["name"] for column in inspector.get_columns("payments")}
+            payment_additions = [
+                ("checkout_request_id", "VARCHAR(120)"),
+                ("merchant_request_id", "VARCHAR(120)"),
+                ("mpesa_receipt_number", "VARCHAR(120)"),
+                ("mpesa_phone_number", "VARCHAR(50)"),
+                ("mpesa_result_description", "VARCHAR(255)"),
+            ]
+
+            for column_name, column_definition in payment_additions:
+                if column_name not in payment_columns:
+                    connection.execute(text(f"ALTER TABLE payments ADD COLUMN {column_name} {column_definition}"))
 
 
 migrate_existing_schema()
 
 app = FastAPI(title="Bidhaa Safi API", version="0.1.0")
+app.mount("/assets", StaticFiles(directory=str(Path(__file__).resolve().parents[1] / "web" / "assets")), name="assets")
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,6 +104,15 @@ app.add_middleware(
 )
 
 WEB_INDEX = Path(__file__).resolve().parents[1] / "web" / "index.html"
+
+DARAJA_CONFIG = {
+    "consumer_key": os.getenv("DARAJA_CONSUMER_KEY", "LyeAVBQDreamJdZfoWBfL9FLsxZilfnUrwSKG2tEYU0F8EPh"),
+    "consumer_secret": os.getenv("DARAJA_CONSUMER_SECRET", "zkp8I1Lw8e9OnarPbyAAmpC4v6tPF3iJDHndCC4vb6XnGEaQX9rJOtXX57uAtpho"),
+    "shortcode": os.getenv("DARAJA_SHORTCODE", "123456"),
+    "passkey": os.getenv("DARAJA_PASSKEY", ""),
+    "callback_url": os.getenv("DARAJA_CALLBACK_URL", "http://127.0.0.1:8000/payments/daraja/callback"),
+    "base_url": os.getenv("DARAJA_BASE_URL", "https://sandbox.safaricom.co.ke"),
+}
 
 
 def seed_default_data() -> None:
@@ -99,7 +133,7 @@ def seed_default_data() -> None:
                 [
                     DeliveryOption(code="standard", name="Standard delivery", base_fee=150.0, description="Regular delivery within service area", is_active=1),
                     DeliveryOption(code="express", name="Express delivery", base_fee=300.0, description="Faster delivery with a higher fee", is_active=1),
-                    DeliveryOption(code="pickup", name="Pickup point / store pickup", base_fee=0.0, description="Customer collects the order", is_active=1),
+                    DeliveryOption(code="pickup", name="Pickup", base_fee=0.0, description="Customer pickup from shop", is_active=1),
                 ]
             )
 
@@ -126,6 +160,7 @@ def seed_default_data() -> None:
                         quantity=40,
                         min_threshold=10,
                         expiry_date=date.today() + timedelta(days=2),
+                        image_url="https://source.unsplash.com/featured/800x600/?milk,dairy",
                         supplier_id=suppliers.get("Nairobi Fresh Farm"),
                     ),
                     Product(
@@ -136,6 +171,7 @@ def seed_default_data() -> None:
                         quantity=30,
                         min_threshold=8,
                         expiry_date=date.today() + timedelta(days=30),
+                        image_url="https://source.unsplash.com/featured/800x600/?flour,grain",
                         supplier_id=suppliers.get("Umoja Foods Depot"),
                     ),
                     Product(
@@ -146,6 +182,7 @@ def seed_default_data() -> None:
                         quantity=24,
                         min_threshold=6,
                         expiry_date=date.today() + timedelta(days=5),
+                        image_url="https://source.unsplash.com/featured/800x600/?bananas,fruit",
                         supplier_id=suppliers.get("Kisumu Produce Line"),
                     ),
                     Product(
@@ -156,6 +193,7 @@ def seed_default_data() -> None:
                         quantity=12,
                         min_threshold=4,
                         expiry_date=date.today() - timedelta(days=1),
+                        image_url="https://source.unsplash.com/featured/800x600/?bread,bakery",
                         supplier_id=suppliers.get("Nairobi Fresh Farm"),
                     ),
                 ]
@@ -221,6 +259,104 @@ def order_total_amount(subtotal: float, delivery_fee: float) -> float:
     return round(subtotal + delivery_fee, 2)
 
 
+def daraja_credentials_configured() -> bool:
+    return all(
+        DARAJA_CONFIG[key]
+        for key in ("consumer_key", "consumer_secret", "shortcode", "passkey", "callback_url", "base_url")
+    )
+
+
+def normalize_ke_phone_number(phone_number: str | None) -> str:
+    digits = "".join(character for character in str(phone_number or "") if character.isdigit())
+    if not digits:
+        return ""
+    if digits.startswith("0") and len(digits) == 10:
+        digits = f"254{digits[1:]}"
+    elif digits.startswith("7") and len(digits) == 9:
+        digits = f"254{digits}"
+    elif digits.startswith("254") and len(digits) == 12:
+        return digits
+    return digits
+
+
+def daraja_access_token() -> str:
+    if not daraja_credentials_configured():
+        raise HTTPException(status_code=500, detail="Daraja credentials are not configured")
+
+    token_url = f"{DARAJA_CONFIG['base_url'].rstrip('/')}/oauth/v1/generate?grant_type=client_credentials"
+    request = urllib_request.Request(token_url)
+    basic_token = base64.b64encode(
+        f"{DARAJA_CONFIG['consumer_key']}:{DARAJA_CONFIG['consumer_secret']}".encode("utf-8")
+    ).decode("utf-8")
+    request.add_header("Authorization", f"Basic {basic_token}")
+
+    try:
+        with urllib_request.urlopen(request, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except urllib_error.HTTPError as error:
+        error_body = error.read().decode("utf-8", errors="ignore")
+        raise HTTPException(status_code=502, detail=f"Daraja token request failed: {error_body or error.reason}") from error
+    except urllib_error.URLError as error:
+        raise HTTPException(status_code=502, detail=f"Daraja token request failed: {error.reason}") from error
+
+    access_token = data.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=502, detail="Daraja token request did not return an access token")
+    return str(access_token)
+
+
+def initiate_daraja_stk_push(order: Order, phone_number: str) -> dict[str, object]:
+    if not daraja_credentials_configured():
+        raise HTTPException(status_code=500, detail="Daraja credentials are not configured")
+
+    normalized_phone = normalize_ke_phone_number(phone_number)
+    if len(normalized_phone) < 12:
+        raise HTTPException(status_code=400, detail="A valid Kenyan phone number is required for M-Pesa payment")
+
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    password = base64.b64encode(
+        f"{DARAJA_CONFIG['shortcode']}{DARAJA_CONFIG['passkey']}{timestamp}".encode("utf-8")
+    ).decode("utf-8")
+    payload = {
+        "BusinessShortCode": DARAJA_CONFIG["shortcode"],
+        "Password": password,
+        "Timestamp": timestamp,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": int(max(1, round(order.total_amount))),
+        "PartyA": normalized_phone,
+        "PartyB": DARAJA_CONFIG["shortcode"],
+        "PhoneNumber": normalized_phone,
+        "CallBackURL": DARAJA_CONFIG["callback_url"],
+        "AccountReference": f"BidhaaHub-{order.id}",
+        "TransactionDesc": f"Payment for order #{order.id}",
+    }
+
+    request = urllib_request.Request(
+        f"{DARAJA_CONFIG['base_url'].rstrip('/')}/mpesa/stkpush/v1/processrequest",
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+    )
+    request.add_header("Content-Type", "application/json")
+    request.add_header("Authorization", f"Bearer {daraja_access_token()}")
+
+    try:
+        with urllib_request.urlopen(request, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except urllib_error.HTTPError as error:
+        error_body = error.read().decode("utf-8", errors="ignore")
+        raise HTTPException(status_code=502, detail=f"Daraja STK push failed: {error_body or error.reason}") from error
+    except urllib_error.URLError as error:
+        raise HTTPException(status_code=502, detail=f"Daraja STK push failed: {error.reason}") from error
+
+    if str(data.get("ResponseCode")) != "0":
+        raise HTTPException(
+            status_code=502,
+            detail=str(data.get("errorMessage") or data.get("ResponseDescription") or "Unable to initiate M-Pesa payment"),
+        )
+
+    return data
+
+
 def storefront_product_to_read(product: Product) -> StorefrontProductRead:
     return StorefrontProductRead.model_validate(
         {
@@ -229,6 +365,7 @@ def storefront_product_to_read(product: Product) -> StorefrontProductRead:
             "category": product.category,
             "unit_price": product.unit_price,
             "quantity": product.quantity,
+            "image_url": product.image_url,
             "stock_status": product_stock_status(product),
         }
     )
@@ -468,9 +605,106 @@ def initiate_payment(
 
     order.payment_method = payload.provider
     order.payment_status = "pending"
+    if payload.provider == "mpesa_daraja":
+        # prefer phone from payload, then order
+        phone_number = payload.phone_number or order.customer_phone
+
+        # If Daraja passkey is not configured, complete payment immediately (mock mode)
+        if not daraja_credentials_configured():
+            payment.checkout_request_id = None
+            payment.merchant_request_id = None
+            payment.mpesa_result_description = "Mock completed (no Daraja passkey configured)"
+            payment.provider_reference = f"mock-mpesa-{order.id}-{int(order.created_at.timestamp())}"
+            payment.status = "completed"
+            order.status = "paid"
+            order.payment_status = "paid"
+        else:
+            if not phone_number:
+                raise HTTPException(status_code=400, detail="Phone number is required for M-Pesa payment")
+            stk_response = initiate_daraja_stk_push(order, phone_number)
+            payment.checkout_request_id = str(stk_response.get("CheckoutRequestID"))
+            payment.merchant_request_id = str(stk_response.get("MerchantRequestID"))
+            payment.mpesa_result_description = str(stk_response.get("ResponseDescription"))
+            payment.provider_reference = str(stk_response.get("CheckoutRequestID"))
+
     db.commit()
     db.refresh(payment)
     return payment
+
+
+
+@app.get('/settings/daraja')
+def get_daraja_settings(user: User = Depends(require_roles('admin', 'staff'))):
+    config_path = Path(__file__).resolve().parents[1] / 'daraja_config.json'
+    if not config_path.exists():
+        # return env-derived defaults
+        return DARAJA_CONFIG
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        raise HTTPException(status_code=500, detail='Unable to read Daraja settings')
+
+
+@app.post('/settings/daraja')
+def set_daraja_settings(payload: dict, user: User = Depends(require_roles('admin', 'staff'))):
+    config_path = Path(__file__).resolve().parents[1] / 'daraja_config.json'
+    try:
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f)
+    except Exception:
+        raise HTTPException(status_code=500, detail='Unable to save Daraja settings')
+    return {'status': 'ok'}
+
+
+@app.post("/payments/daraja/callback")
+def daraja_callback(payload: dict[str, object], db: Session = Depends(get_db)) -> dict[str, str]:
+    body = payload.get("Body") if isinstance(payload.get("Body"), dict) else {}
+    stk_callback = body.get("stkCallback") if isinstance(body, dict) else {}
+    if not isinstance(stk_callback, dict):
+        return {"status": "ignored"}
+
+    checkout_request_id = stk_callback.get("CheckoutRequestID")
+    if not checkout_request_id:
+        return {"status": "ignored"}
+
+    payment = (
+        db.query(Payment)
+        .filter(Payment.checkout_request_id == str(checkout_request_id))
+        .first()
+        or db.query(Payment)
+        .filter(Payment.provider_reference == str(checkout_request_id))
+        .first()
+    )
+    if payment is None:
+        return {"status": "ignored"}
+
+    payment.merchant_request_id = str(stk_callback.get("MerchantRequestID") or payment.merchant_request_id or "") or None
+    payment.mpesa_result_description = str(stk_callback.get("ResultDesc") or payment.mpesa_result_description or "") or None
+
+    if str(stk_callback.get("ResultCode")) == "0":
+        metadata_items = []
+        callback_metadata = stk_callback.get("CallbackMetadata")
+        if isinstance(callback_metadata, dict):
+            metadata_items = callback_metadata.get("Item") or []
+
+        metadata_map: dict[str, object] = {}
+        if isinstance(metadata_items, list):
+            for item in metadata_items:
+                if isinstance(item, dict) and item.get("Name"):
+                    metadata_map[str(item["Name"])] = item.get("Value")
+
+        payment.status = "completed"
+        payment.mpesa_receipt_number = str(metadata_map.get("MpesaReceiptNumber") or "") or None
+        payment.mpesa_phone_number = str(metadata_map.get("PhoneNumber") or "") or None
+        payment.provider_reference = str(checkout_request_id)
+        if payment.order is not None:
+            payment.order.payment_status = "paid"
+    else:
+        payment.status = "failed"
+
+    db.commit()
+    return {"status": "ok"}
 
 
 @app.post("/payments/{payment_id}/mock-complete", response_model=PaymentRead)
@@ -509,6 +743,33 @@ def list_suppliers(db: Session = Depends(get_db), user: User = Depends(require_r
     return db.query(Supplier).order_by(Supplier.name.asc()).all()
 
 
+@app.patch("/suppliers/{supplier_id}", response_model=SupplierRead)
+def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> Supplier:
+    supplier = db.get(Supplier, supplier_id)
+    if supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    updates = payload.model_dump(exclude_unset=True)
+    for key, value in updates.items():
+        setattr(supplier, key, value)
+
+    db.commit()
+    db.refresh(supplier)
+    return supplier
+
+
+@app.delete("/suppliers/{supplier_id}")
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> dict[str, str]:
+    supplier = db.get(Supplier, supplier_id)
+    if supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    db.query(Product).filter(Product.supplier_id == supplier_id).update({Product.supplier_id: None})
+    db.delete(supplier)
+    db.commit()
+    return {"status": "ok"}
+
+
 @app.post("/products", response_model=ProductRead)
 def create_product(payload: ProductCreate, db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> Product:
     if payload.supplier_id is not None:
@@ -532,6 +793,7 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db), user: 
         product.unit_price = payload.unit_price
         product.min_threshold = payload.min_threshold
         product.expiry_date = payload.expiry_date
+        product.image_url = payload.image_url
         if payload.barcode is not None:
             product.barcode = payload.barcode
 
@@ -609,7 +871,7 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     if payload.transaction_type == "sale":
         product.quantity -= payload.quantity
     elif payload.transaction_type == "restock":
-        product.quantity += payload.quantity
+        product.quantity += payload.quantity  # Consider adding logic to update unit_price if restock price changes
     elif payload.transaction_type == "waste":
         product.quantity -= payload.quantity
     elif payload.transaction_type == "adjustment":

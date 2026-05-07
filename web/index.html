@@ -79,8 +79,9 @@
       align-items: center;
       justify-content: space-between;
       padding: 20px 40px;
-      background: linear-gradient(135deg, rgba(20, 95, 74, 0.08), rgba(186, 107, 18, 0.04));
-      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.55);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -95,53 +96,136 @@
       color: var(--accent);
     }
 
+    .landing-brand img {
+      height: 40px;
+      width: auto;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    }
+
     .landing-header-actions {
       display: flex;
       gap: 12px;
     }
 
-    .landing-hero {
-      padding: 80px 40px;
-      text-align: center;
-      max-width: 1000px;
-      margin: 0 auto;
-      position: relative;
-      overflow: hidden;
-      border-radius: 28px;
-      background:
-        linear-gradient(180deg, rgba(11, 18, 32, 0.78), rgba(11, 18, 32, 0.88)),
-        url('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
-    }
-
-    .landing-hero h1 {
-      font-size: clamp(2.5rem, 5vw, 4rem);
-      margin-bottom: 14px;
-      color: #fff;
-      -webkit-background-clip: text;
-    }
-
-    .hero-tagline {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
-      color: #f8fafc;
+    .landing-header-actions .button-ghost {
+      background: rgba(255, 255, 255, 0.95);
+      color: #222;
       font-weight: 700;
-      letter-spacing: 0.02em;
-      margin-bottom: 18px;
+      border-radius: 12px;
     }
 
-    .hero-copy {
-      max-width: 760px;
-      margin: 0 auto;
-      font-size: 1.15rem;
-      margin-bottom: 18px;
-      color: #e5e7eb;
+    .landing-header-actions .button-ghost:hover {
+      background: white;
+    }
+
+    .landing-hero {
+      padding: 0;
+      margin: 0;
+      border-radius: 0;
+      background: none !important;
+      border: none;
+      box-shadow: none;
+    }
+
+    /* HERO VIDEO SECTION */
+    .hero-section {
+      position: relative;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      isolation: isolate;
+    }
+
+    .hero-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      z-index: -2;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: -1;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      color: white;
+      padding: 0 20px;
+      animation: fadeIn 1.5s ease-in-out;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-content h1 {
+      font-size: 3.2rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .hero-content p {
+      font-size: 1.25rem;
+      margin-bottom: 30px;
+      opacity: 0.9;
+      color: #fff;
+    }
+
+    .hero-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: 0.3s;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #2dd4bf;
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #1aa99a;
+    }
+
+    .btn-secondary {
+      background: #fbbf24;
+      color: #000;
+    }
+
+    .btn-secondary:hover {
+      background: #d89e12;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .landing-features {
@@ -150,6 +234,244 @@
       gap: 24px;
       margin-top: 60px;
       padding: 0 40px 60px;
+    }
+
+    .preview-section {
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .preview-section h2 {
+      font-size: 2.4rem;
+      margin-bottom: 40px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 24px;
+    }
+
+    .preview-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      transition: 0.3s;
+    }
+
+    .preview-card img {
+      display: block;
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      background-color: rgba(255,255,255,0.05);
+    }
+
+    .preview-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+    }
+
+    .preview-card h3 {
+      padding: 16px;
+    }
+
+    /* WHY CHOOSE US */
+    .why-section {
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .why-section h2 {
+      font-size: 2.5rem;
+      margin-bottom: 50px;
+      color: #fff;
+    }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 28px;
+    }
+
+    .why-card {
+      background: rgba(255,255,255,0.05);
+      padding: 30px 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: 0.3s ease;
+    }
+
+    .why-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+    }
+
+    .why-icon {
+      font-size: 2.4rem;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    /* PRODUCT CAROUSEL */
+    .brand-carousel {
+      padding: 40px 20px;
+      text-align: center;
+      background: transparent;
+      margin: 0;
+    }
+
+    .brand-carousel h2 {
+      font-size: 2rem;
+      color: #fff;
+      margin-bottom: 30px;
+    }
+
+    .brand-track {
+      display: flex;
+      gap: 25px;
+      overflow: hidden;
+      animation: scrollBrands 25s linear infinite;
+      width: 100%;
+    }
+
+    .brand-track img {
+      width: 140px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
+
+    @keyframes scrollBrands {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .meet-section {
+      padding: 80px 40px;
+      text-align: center;
+      background: linear-gradient(135deg, #2d1b69 0%, #1a0e42 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .meet-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1" fill="rgba(255,255,255,0.05)"/><circle cx="40" cy="80" r="1.5" fill="rgba(255,255,255,0.08)"/></svg>');
+      pointer-events: none;
+    }
+
+    .meet-section h2 {
+      font-size: 2.8rem;
+      margin-bottom: 60px;
+      color: #fff;
+      position: relative;
+      z-index: 1;
+    }
+
+    .meet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .meet-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      padding: 40px 30px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      text-align: left;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .meet-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .meet-number {
+      font-size: 3rem;
+      font-weight: 800;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 20px;
+    }
+
+    .meet-card h3 {
+      font-size: 1.5rem;
+      color: #fff;
+      margin-bottom: 15px;
+    }
+
+    .meet-card p {
+      color: rgba(255,255,255,0.8);
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .meet-visual {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .meet-visual img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .meet-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(34, 197, 94, 0.9);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .meet-badge:nth-child(3) {
+      top: 10px;
+      left: auto;
+      right: 10px;
+      background: rgba(59, 130, 246, 0.9);
+    }
+
+    .meet-stat {
+      color: #a78bfa;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    /* Footer branding improvements */
+    .footer-branding img {
+      height: 60px;
+      width: auto;
+      margin-bottom: 10px;
+    }
+
+    .footer-branding p {
+      font-size: 1.05rem;
+      color: #cbd5e1;
+      max-width: 320px;
+      line-height: 1.6;
     }
 
     .feature-card {
@@ -328,6 +650,45 @@
       flex-wrap: wrap;
       justify-content: space-between;
       gap: 12px;
+    }
+
+    .modern-footer {
+      background: #0b1120;
+      color: #cbd5e1;
+      padding: 60px 40px;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 40px;
+    }
+
+    .footer-links h4 {
+      margin-bottom: 16px;
+      color: white;
+    }
+
+    .footer-links a {
+      display: block;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      margin-top: 40px;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 16px;
     }
 
     .create-account-shell {
@@ -865,6 +1226,25 @@
       justify-content: center;
       font-size: 2rem;
       border-bottom: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-image-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: rgba(36, 59, 83, 0.72);
     }
 
     .product-info {
@@ -905,6 +1285,48 @@
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
+    }
+
+    .toast-container {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 4000;
+      display: grid;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      min-width: 240px;
+      max-width: 340px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      color: #fff;
+      background: rgba(31, 41, 51, 0.94);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      pointer-events: auto;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    .toast.success {
+      background: rgba(20, 95, 74, 0.96);
+    }
+
+    .toast.error {
+      background: rgba(185, 28, 28, 0.96);
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* ===== TABLES ===== */
@@ -1095,16 +1517,38 @@
         top: auto;
       }
 
-      .landing-hero {
-        padding: 40px 20px;
+      .hero-section {
+        height: 100vh;
       }
 
-      .landing-hero h1 {
+      .hero-content h1 {
         font-size: 2rem;
+      }
+
+      .hero-content p {
+        font-size: 1rem;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        width: 100%;
       }
 
       .landing-header {
         padding: 16px 20px;
+      }
+
+      .preview-section {
+        padding: 56px 20px;
+      }
+
+      .preview-section h2 {
+        font-size: 2rem;
       }
 
       .landing-features {
@@ -1186,7 +1630,9 @@
 <!-- LANDING PAGE -->
 <div class="landing-view active" id="landingView">
   <header class="landing-header">
-    <div class="landing-brand">📦 BidhaaHub</div>
+    <div class="landing-brand">
+      <img src="assets/images/logo.png" alt="BidhaaHub">
+    </div>
     <div class="landing-header-actions">
       <button class="button-ghost" onclick="landingShowAuth('customer')">Shop</button>
       <button class="button-ghost" onclick="landingShowAuth('admin')">Manage</button>
@@ -1194,9 +1640,103 @@
   </header>
 
   <main class="landing-hero">
-    <div class="hero-tagline">One platform for stores and shoppers.</div>
-    <h1>Smart Grocery Management & Storefront</h1>
-    <p class="hero-copy">All-in-one platform for grocery stores to manage stock, process orders, and track deliveries in real-time.</p>
+    <section class="hero-section">
+      <video class="hero-video" autoplay muted loop playsinline>
+        <source src="assets/videos/hero.mp4" type="video/mp4">
+      </video>
+
+      <div class="overlay"></div>
+
+      <div class="hero-content">
+        <h1>Smart Grocery Management & Storefront</h1>
+        <p>All-in-one platform for grocery stores to manage stock, process orders, and track deliveries in real-time.</p>
+
+        <div class="hero-buttons">
+          <button class="btn-primary" onclick="landingShowAuth('customer')">Shop Now</button>
+          <button class="btn-secondary" onclick="landingShowAuth('admin')">Manage Store</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview-section">
+      <h2>Popular Products</h2>
+      <div class="preview-grid">
+        <div class="preview-card">
+          <img src="assets/images/popular/fresh_vegetables.png" alt="Fresh Vegetables">
+          <h3>Fresh Vegetables</h3>
+        </div>
+        <div class="preview-card">
+          <img src="assets/images/popular/seasonal_fruits.png" alt="Seasonal Fruits">
+          <h3>Seasonal Fruits</h3>
+        </div>
+        <div class="preview-card">
+          <img src="assets/images/popular/groceries.png" alt="Groceries">
+          <h3>Groceries</h3>
+        </div>
+        <div class="preview-card">
+          <img src="assets/images/popular/organic_pics.png" alt="Organic Picks">
+          <h3>Organic Picks</h3>
+        </div>
+      </div>
+    </section>
+
+    <section class="meet-section">
+      <h2>Meet BidhaaHub</h2>
+      
+      <div class="meet-grid">
+        <div class="meet-card">
+          <div class="meet-number">01</div>
+          <h3>Your Online Mama Mboga</h3>
+          <p>We bring the traditional market experience to your fingertips. Fresh produce, local suppliers, and that personal touch you've always known and trusted.</p>
+          
+          <div class="meet-visual">
+            <img src="assets/images/popular/fresh_vegetables.png" alt="Fresh vegetables">
+            <div class="meet-badge">Fresh Daily</div>
+          </div>
+          
+          <div class="meet-stat">1,000+ Products</div>
+        </div>
+        <div class="meet-card">
+          <div class="meet-number">02</div>
+          <h3>Vegetables to Your Doorstep</h3>
+          <p>No more crowded markets or heavy bags. Quality produce delivered fresh to your door, handpicked by our expert team who understands what good looks like.</p>
+          
+          <div class="meet-visual">
+            <img src="assets/images/popular/seasonal_fruits.png" alt="Delivery">
+            <div class="meet-badge">Same Day</div>
+            <div class="meet-badge">Free Delivery</div>
+          </div>
+          
+          <div class="meet-stat">Fast Delivery</div>
+        </div>
+        <div class="meet-card">
+          <div class="meet-number">03</div>
+          <h3>We Remember Your Preferences</h3>
+          <p>Tell us your family's favorites and dietary needs. We'll customize your weekly deliveries, remember what you love, and suggest new items you'll enjoy.</p>
+          
+          <div class="meet-visual">
+            <img src="assets/images/popular/organic_pics.png" alt="Custom packages">
+            <div class="meet-badge">Personalized</div>
+          </div>
+          
+          <div class="meet-stat">Smart Recommendations</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="brand-carousel">
+      <h2>Featured Deals</h2>
+      <div class="brand-track">
+          <img src="assets/images/popular/fresh_vegetables.png" alt="">
+          <img src="assets/images/popular/seasonal_fruits.png" alt="">
+          <img src="assets/images/popular/groceries.png" alt="">
+          <img src="assets/images/popular/organic_pics.png" alt="">
+          <img src="assets/images/popular/fresh_vegetables.png" alt="">
+          <img src="assets/images/popular/seasonal_fruits.png" alt="">
+          <img src="assets/images/popular/groceries.png" alt="">
+          <img src="assets/images/popular/organic_pics.png" alt="">
+      </div>
+    </section>
 
     <div class="landing-features">
       <div class="feature-card">
@@ -1229,11 +1769,6 @@
         <h3>Role-Based Access</h3>
         <p>Separate dashboards for customers (shop), staff (operations), and admin (business).</p>
       </div>
-    </div>
-
-    <div class="landing-cta">
-      <button class="button" onclick="landingShowAuth('customer')">🛍️ Shop Now</button>
-      <button class="button-secondary" onclick="landingShowAuth('admin')">⚙️ Manage Store</button>
     </div>
   </main>
 </div>
@@ -1309,7 +1844,10 @@
     <div class="topbar">
       <div class="brand">
         <div class="mark">📦</div>
-        <h2>BidhaaHub <small id="roleLabel">Admin</small></h2>
+        <div>
+          <h2>BidhaaHub <small id="roleLabel">Admin</small></h2>
+          <span id="roleTagline" style="display:block; color: var(--muted); font-size: 0.85rem; margin-top: 2px;">Inventory control and operations.</span>
+        </div>
       </div>
       <div class="topbar-actions">
         <span id="userGreeting" style="color: var(--muted); font-size: 0.9rem;"></span>
@@ -1577,11 +2115,8 @@
                 <div class="form-group">
                   <label>Category</label>
                   <select id="productCategory" name="category" required>
-                    <option value="">Select category...</option>
-                    <option value="dairy">Dairy</option>
-                    <option value="grains">Grains</option>
-                    <option value="fresh">Fresh Produce</option>
                   </select>
+                  <input id="productNewCategory" name="new_category" type="text" placeholder="Or type a new category" style="margin-top: 10px;" />
                 </div>
                 <div class="form-group">
                   <label>Supplier</label>
@@ -1614,6 +2149,11 @@
                   <input id="productBarcode" name="barcode" type="text" placeholder="1234567890" />
                 </div>
               </div>
+                <div class="form-group">
+                  <label>Product Image URL</label>
+                  <input id="productImageUrl" name="image_url" type="url" placeholder="https://example.com/product.jpg" />
+                  <p style="margin-top: 6px; font-size: 0.85rem; color: var(--muted);">Optional. Paste a direct image link to show a real product photo in the shop.</p>
+                </div>
               <button type="submit" class="button">Save Product</button>
             </div>
           </form>
@@ -1678,7 +2218,7 @@
 
         <section class="page" data-page="payment-settings">
           <h2>💳 Payment Settings</h2>
-          <p>Configure payment methods and API keys.</p>
+          <p>Configure payment methods.</p>
           
           <div style="display: grid; gap: 24px;">
             <div class="table-card">
@@ -1695,8 +2235,8 @@
                   <tbody>
                     <tr>
                       <td>M-Pesa Daraja</td>
-                      <td><span class="badge badge-pending">Requires Setup</span></td>
-                      <td><button class="button-ghost button-small" onclick="showDarajaSetup()">Setup API Keys</button></td>
+                      <td><span class="badge badge-completed">Active</span></td>
+                      <td>Configured in backend</td>
                     </tr>
                     <tr>
                       <td>PayPal</td>
@@ -1718,29 +2258,6 @@
               </div>
             </div>
 
-            <div class="panel" style="padding: 20px;">
-              <h3>🔐 Daraja M-Pesa Setup</h3>
-              <p style="margin-bottom: 16px;">Add your Safaricom Daraja API credentials to enable M-Pesa payment prompts.</p>
-              <form id="darajaForm" onsubmit="saveDarajaKeys(event)">
-                <div class="form-group">
-                  <label>Consumer Key</label>
-                  <input id="daraja_key" type="password" placeholder="••••••••••••" />
-                </div>
-                <div class="form-group">
-                  <label>Consumer Secret</label>
-                  <input id="daraja_secret" type="password" placeholder="••••••••••••" />
-                </div>
-                <div class="form-group">
-                  <label>Shortcode</label>
-                  <input id="daraja_shortcode" type="text" placeholder="123456" />
-                </div>
-                <div class="form-group">
-                  <label>Passkey</label>
-                  <input id="daraja_passkey" type="password" placeholder="••••••••••••" />
-                </div>
-                <button type="submit" class="button">Save Daraja Keys</button>
-              </form>
-            </div>
           </div>
         </section>
 
@@ -1820,36 +2337,33 @@
   </div>
 </div>
 
-<footer class="global-footer">
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <div class="footer-brand-row">
-        <div class="mark" style="width: 42px; height: 42px; border-radius: 14px;">📦</div>
-        <div>
-          <div>BidhaaHub</div>
-          <small style="color: #cbd5e1; font-weight: 500;">One platform for stores and shoppers.</small>
-        </div>
-      </div>
-      <p style="color: #cbd5e1;">Smart grocery management, storefront sales, and delivery tracking in one place.</p>
+<footer class="modern-footer">
+  <div class="footer-inner">
+    <div class="footer-branding">
+      <img src="assets/images/logo.png" alt="BidhaaHub" style="height:50px;">
+      <p>Smart grocery management & modern storefront for daily operations.</p>
     </div>
     <div class="footer-links">
-      <strong>Navigation</strong>
-      <button class="footer-link-btn" type="button" onclick="goToLogin('customer')">Login as Customer</button>
-      <button class="footer-link-btn" type="button" onclick="goToLogin('admin')">Login as Admin</button>
+      <h4>Explore</h4>
+      <a href="#">Shop</a>
+      <a href="#">Manage Store</a>
+      <a href="#">Login</a>
     </div>
-    <div class="footer-social">
-      <strong>Follow</strong>
-      <div class="social-row">
-        <a class="social-pill" href="#" aria-label="Facebook">f</a>
-        <a class="social-pill" href="#" aria-label="Instagram">ig</a>
-        <a class="social-pill" href="#" aria-label="X">x</a>
-        <a class="social-pill" href="#" aria-label="LinkedIn">in</a>
-      </div>
+    <div class="footer-links">
+      <h4>Company</h4>
+      <a href="#">About</a>
+      <a href="#">Support</a>
+      <a href="#">Privacy</a>
+    </div>
+    <div class="footer-links">
+      <h4>Follow</h4>
+      <a href="#">Facebook</a>
+      <a href="#">Instagram</a>
+      <a href="#">LinkedIn</a>
     </div>
   </div>
-  <div class="footer-copy">
-    <span>© 2026 BidhaaHub. All rights reserved.</span>
-    <span>Built for modern grocery operations.</span>
+  <div class="footer-bottom">
+    © 2026 BidhaaHub · All rights reserved
   </div>
 </footer>
 
@@ -1904,11 +2418,12 @@
 <div class="modal" id="supplierModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Add Supplier</h3>
+      <h3 id="supplierModalTitle">Add Supplier</h3>
       <button class="modal-close" onclick="closeModal('supplierModal')">✕</button>
     </div>
     <div id="supplierFormFeedback" class="form-feedback"></div>
     <form id="supplierForm" onsubmit="handleSupplierSubmit(event)">
+      <input type="hidden" id="supplierId" name="supplier_id" />
       <div class="form-group">
         <label>Supplier Name</label>
         <input name="name" type="text" required />
@@ -1932,6 +2447,30 @@
         <input name="lead_time_days" type="number" min="1" step="1" required />
       </div>
       <button class="button-secondary" type="submit" style="width: 100%;">Save Supplier</button>
+      <button class="button-ghost" id="deleteSupplierButton" type="button" onclick="deleteCurrentSupplier()" style="width: 100%; margin-top: 10px; display: none;">Delete Supplier</button>
+    </form>
+  </div>
+</div>
+
+<!-- RESTOCK MODAL -->
+<div class="modal" id="restockModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Restock Product</h3>
+      <button class="modal-close" onclick="closeModal('restockModal')">✕</button>
+    </div>
+    <div id="restockFormFeedback" class="form-feedback"></div>
+    <form id="restockForm" onsubmit="handleRestockSubmit(event)">
+      <input type="hidden" id="restockProductId" name="product_id" />
+      <div class="form-group">
+        <label>Product</label>
+        <input id="restockProductName" type="text" disabled />
+      </div>
+      <div class="form-group">
+        <label>Quantity to Add</label>
+        <input id="restockQuantity" name="quantity" type="number" min="1" step="1" required />
+      </div>
+      <button class="button-secondary" type="submit" style="width: 100%;">Restock</button>
     </form>
   </div>
 </div>
@@ -1968,6 +2507,71 @@
   </div>
 </div>
 
+<!-- EDIT PRODUCT MODAL -->
+<div class="modal" id="editProductModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Product</h3>
+      <button class="modal-close" onclick="closeModal('editProductModal')">✕</button>
+    </div>
+    <div id="editProductFormFeedback" class="form-feedback"></div>
+    <form id="editProductForm" onsubmit="handleEditProduct(event)">
+      <div style="display: grid; gap: 16px;">
+        <div class="form-group">
+          <label>Product Name</label>
+          <input id="editProductName" name="name" type="text" required />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="editProductCategory" name="category" required>
+            </select>
+            <input id="editProductNewCategory" name="new_category" type="text" placeholder="Or type a new category" style="margin-top: 10px;" />
+          </div>
+          <div class="form-group">
+            <label>Supplier</label>
+            <select id="editProductSupplierSelect" name="supplier_id" required>
+              <option value="">Select supplier...</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Unit Price (KES)</label>
+            <input id="editProductUnitPrice" name="unit_price" type="number" placeholder="100" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Current Stock</label>
+            <input id="editProductQuantity" name="quantity" type="number" placeholder="50" min="0" required />
+          </div>
+          <div class="form-group">
+            <label>Min. Threshold</label>
+            <input id="editProductMinThreshold" name="min_threshold" type="number" placeholder="10" min="0" required />
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label>Expiry Date</label>
+            <input id="editProductExpiryDate" name="expiry_date" type="date" required />
+          </div>
+          <div class="form-group">
+            <label>Barcode</label>
+            <input id="editProductBarcode" name="barcode" type="text" placeholder="1234567890" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Product Image URL</label>
+          <input id="editProductImageUrl" name="image_url" type="url" placeholder="https://example.com/product.jpg" />
+          <p style="margin-top: 6px; font-size: 0.85rem; color: var(--muted);">Optional. Paste a direct image link to show a real product photo in the shop.</p>
+        </div>
+        <button type="submit" class="button">Update Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
 <script>
   // ===== STATE & CONFIG =====
   const API_URL = 'http://127.0.0.1:8000';
@@ -1978,8 +2582,11 @@
   let adminProducts = [];
   let productsViewMode = 'all';
   let checkoutDeliveryOptions = [];
+  let customerOrdersRefreshTimer = null;
   let suppressHashRouting = false;
   let supplierDirectory = [];
+  let customerOrders = [];
+  const DEFAULT_CATEGORIES = ['Dairy', 'Grains', 'Fresh Produce'];
 
   const PAGE_TO_ROUTE = {
     'customer-home': '/customer',
@@ -2180,6 +2787,9 @@
     document.body.classList.toggle('customer-mode', role === 'customer');
     document.body.classList.toggle('admin-mode', role !== 'customer');
     document.getElementById('roleLabel').textContent = role === 'customer' ? 'Storefront' : 'Admin';
+    document.getElementById('roleTagline').textContent = role === 'customer'
+      ? 'Fresh picks, live stock, quick checkout.'
+      : 'Inventory control, suppliers, and reporting.';
     document.getElementById('userRole').textContent = role.toUpperCase();
     document.getElementById('userGreeting').textContent = `Welcome, ${currentUser.full_name}!`;
 
@@ -2203,10 +2813,12 @@
     if (role === 'customer') {
       loadProducts();
       loadCustomerDeliveryOptions();
+      startCustomerOrdersRefresh();
       applyRouteForCurrentUser();
       return;
     }
 
+    stopCustomerOrdersRefresh();
     loadSuppliers();
     loadSupplierOptions();
     loadDashboardData();
@@ -2276,8 +2888,16 @@
     if (pageId === 'home') loadDashboardData();
     if (pageId === 'products') loadAdminProducts();
     if (pageId === 'add-product') loadSupplierOptions();
+    if (pageId === 'cart' || pageId === 'checkout') syncCartState();
+    if (pageId === 'cart') renderCart();
+    if (pageId === 'checkout') renderCheckout();
     if (pageId === 'orders') loadAdminOrders();
-    if (pageId === 'my-orders') loadMyOrders();
+    if (pageId === 'my-orders') {
+      startCustomerOrdersRefresh();
+      loadMyOrders();
+    } else {
+      stopCustomerOrdersRefresh();
+    }
     if (pageId === 'suppliers') loadSuppliers();
     if (pageId === 'delivery-settings') loadDeliveryOptions();
     if (pageId === 'reports') loadReportsSummary();
@@ -2296,6 +2916,112 @@
   function getSupplierName(supplierId) {
     const supplier = supplierDirectory.find(item => Number(item.id) === Number(supplierId));
     return supplier ? supplier.name : (supplierId || '—');
+  }
+
+  function getSavedCategories() {
+    try {
+      return JSON.parse(localStorage.getItem('customCategories') || '[]').filter(Boolean);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveCategory(category) {
+    const value = String(category || '').trim();
+    if (!value) return;
+    const existing = new Set([...DEFAULT_CATEGORIES, ...getSavedCategories()].map(item => item.toLowerCase()));
+    if (existing.has(value.toLowerCase())) return;
+    const categories = getSavedCategories();
+    categories.push(value);
+    localStorage.setItem('customCategories', JSON.stringify(categories));
+  }
+
+  function getCategoryList() {
+    const merged = [
+      ...DEFAULT_CATEGORIES,
+      ...getSavedCategories(),
+      ...products.map(product => product.category),
+      ...adminProducts.map(product => product.category)
+    ].map(category => String(category || '').trim()).filter(Boolean);
+
+    return [...new Map(merged.map(category => [category.toLowerCase(), category])).values()].sort((a, b) => a.localeCompare(b));
+  }
+
+  function populateCategorySelect(selectId, selectedValue = '') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.innerHTML = '<option value="">Select category...</option>';
+    getCategoryList().forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      if (String(selectedValue).toLowerCase() === category.toLowerCase()) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+  }
+
+  function refreshCategoryControls() {
+    const filterSelect = document.getElementById('categoryFilter');
+    if (filterSelect) {
+      const selectedValue = String(filterSelect.value || '').toLowerCase();
+      filterSelect.innerHTML = '<option value="">All Categories</option>';
+      getCategoryList().forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.toLowerCase();
+        option.textContent = category;
+        if (selectedValue && selectedValue === category.toLowerCase()) {
+          option.selected = true;
+        }
+        filterSelect.appendChild(option);
+      });
+    }
+
+    populateCategorySelect('productCategory', document.getElementById('productCategory')?.value || '');
+    populateCategorySelect('editProductCategory', document.getElementById('editProductCategory')?.value || '');
+  }
+
+  function resolveFormCategory(selectId, customInputId) {
+    const customCategory = String(document.getElementById(customInputId)?.value || '').trim();
+    const selectedCategory = String(document.getElementById(selectId)?.value || '').trim();
+    return customCategory || selectedCategory || null;
+  }
+
+  function getProductImageUrl(product) {
+    if (product && typeof product.image_url === 'string' && product.image_url.trim()) {
+      return product.image_url.trim();
+    }
+
+    const queryParts = [product?.name, product?.category]
+      .filter(Boolean)
+      .map(value => String(value).trim())
+      .filter(Boolean);
+    const query = queryParts.length > 0 ? queryParts.join(',') : 'grocery product';
+    return `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(query)}`;
+  }
+
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) {
+      alert(message);
+      return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    window.setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(12px)';
+      toast.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    }, 2200);
+
+    window.setTimeout(() => {
+      toast.remove();
+    }, 2500);
   }
 
   function toggleCustomerMenu() {
@@ -2347,6 +3073,7 @@
 
       const data = await response.json();
       products = Array.isArray(data) ? data : [];
+      refreshCategoryControls();
       filterProducts();
     } catch (err) {
       console.error('Error loading products:', err);
@@ -2360,13 +3087,16 @@
   function renderProductCards(items) {
     return items.map(p => `
       <div class="product-card" onclick="showProductDetail(${p.id})">
-        <div class="product-image">📦</div>
+        <div class="product-image">
+          <img src="${getProductImageUrl(p)}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="product-image-placeholder" style="display:none;">📦</div>
+        </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
           <div class="product-price">${p.unit_price} KES</div>
           <div class="product-stock">Stock: ${p.quantity}</div>
           <div class="product-actions">
-            <button class="button button-small" onclick="addToCart(event, ${p.id}, '${p.name}', ${p.unit_price})">Add</button>
+            <button class="button button-small" onclick='addToCart(event, ${p.id}, ${JSON.stringify(p.name)}, ${p.unit_price})'>Add</button>
             <button class="button-ghost button-small" onclick="showProductDetail(${p.id})">View</button>
           </div>
         </div>
@@ -2421,6 +3151,44 @@
     return fallback;
   }
 
+  function startCustomerOrdersRefresh() {
+    if (!currentUser || currentUser.role !== 'customer') return;
+    if (customerOrdersRefreshTimer) return;
+
+    customerOrdersRefreshTimer = setInterval(() => {
+      const activePage = document.querySelector('main .page.active')?.dataset.page;
+      if (activePage === 'my-orders') {
+        loadMyOrders();
+      }
+    }, 15000);
+  }
+
+  function stopCustomerOrdersRefresh() {
+    if (!customerOrdersRefreshTimer) return;
+    clearInterval(customerOrdersRefreshTimer);
+    customerOrdersRefreshTimer = null;
+  }
+
+  function getApiErrorMessage(data, fallback = 'Unknown error') {
+    if (!data) return fallback;
+
+    if (typeof data.detail === 'string' && data.detail.trim()) {
+      return data.detail;
+    }
+
+    if (Array.isArray(data.detail) && data.detail.length > 0) {
+      const issue = data.detail[0];
+      if (typeof issue === 'string') return issue;
+      if (issue && typeof issue === 'object') {
+        const fieldPath = Array.isArray(issue.loc) ? issue.loc.join('.') : 'request';
+        const message = issue.msg || fallback;
+        return `${fieldPath}: ${message}`;
+      }
+    }
+
+    return fallback;
+  }
+
   function showProductDetail(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -2429,7 +3197,10 @@
     const content = document.getElementById('productModalContent');
     content.innerHTML = `
       <div style="display: grid; gap: 16px;">
-        <div style="background: linear-gradient(135deg, rgba(20, 95, 74, 0.1), rgba(186, 107, 18, 0.08)); padding: 40px; border-radius: 12px; text-align: center; font-size: 3rem;">📦</div>
+        <div style="height: 260px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, rgba(20, 95, 74, 0.1), rgba(186, 107, 18, 0.08)); border: 1px solid var(--line);">
+          <img src="${getProductImageUrl(product)}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:3rem; color: rgba(36, 59, 83, 0.72);">📦</div>
+        </div>
         <div>
           <p style="color: var(--muted); margin-bottom: 4px;">Product Name</p>
           <h3>${product.name}</h3>
@@ -2444,7 +3215,7 @@
             <h3>${product.quantity}</h3>
           </div>
         </div>
-        <button class="button" onclick="addToCart(null, ${product.id}, '${product.name}', ${product.unit_price}); closeModal('productModal')">Add to Cart</button>
+        <button class="button" onclick='addToCart(null, ${product.id}, ${JSON.stringify(product.name)}, ${product.unit_price}); closeModal("productModal")'>Add to Cart</button>
       </div>
     `;
     modal.classList.add('active');
@@ -2461,7 +3232,8 @@
       const category = String(p.category || '').toLowerCase();
       const matchesSearch = !search || name.includes(search);
       const matchesCategory = !selectedCategory || category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const isAvailable = !isExpiredProduct(p) && p.quantity > 0;
+      return matchesSearch && matchesCategory && isAvailable;
     });
 
     if (products.length === 0) {
@@ -2536,7 +3308,7 @@
           : '<button class="button-ghost button-small" disabled>Recorded</button>')
         : expiringSoon
           ? '<button class="button-secondary button-small" disabled>Clearance Recommended</button>'
-          : '<button class="button-ghost button-small">Edit</button>';
+          : `<button class="button-ghost button-small" onclick="showEditProductModal(${product.id})">Edit</button>${Number(product.quantity || 0) <= 0 ? ` <button class="button-secondary button-small" onclick="showRestockModal(${product.id})">Restock</button>` : ''}`;
 
       return `
         <tr>
@@ -2581,9 +3353,15 @@
     }
     localStorage.setItem('cart', JSON.stringify(cartItems));
     renderCart();
+    showToast('Item added to cart successfully.', 'success');
+  }
+
+  function syncCartState() {
+    cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
   }
 
   function renderCart() {
+    syncCartState();
     const container = document.getElementById('cartContainer');
     if (cartItems.length === 0) {
       container.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--muted);">Your cart is empty.</p>';
@@ -2686,6 +3464,7 @@
   }
 
   function renderCheckout() {
+    syncCartState();
     const summary = document.getElementById('orderSummary');
     if (!summary) return;
 
@@ -2770,8 +3549,14 @@
       const response = await fetch(`${API_URL}/orders/me`, {
         headers: { 'Authorization': `Bearer ${currentToken}` }
       });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(getApiErrorMessage(data, 'Unable to load orders'));
+      }
+
       const orders = await response.json();
       const container = document.getElementById('myOrdersContainer');
+      if (!container) return;
 
       if (orders.length === 0) {
         container.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--muted);">No orders yet.</p>';
@@ -2934,12 +3719,12 @@
         headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       adminProducts = await response.json();
+      refreshCategoryControls();
       renderAdminProducts();
     } catch (err) {
       console.error('Error loading products:', err);
     }
   }
-
   async function loadAdminOrders() {
     try {
       const response = await fetch(`${API_URL}/orders`, {
@@ -2985,7 +3770,10 @@
           <td>${s.phone ? `<a href="tel:${s.phone}">${s.phone}</a>` : '—'}</td>
           <td>${s.lead_time_days} days</td>
           <td><span class="badge badge-completed">Active</span></td>
-          <td><button class="button-ghost button-small">Edit</button></td>
+          <td>
+            <button class="button-ghost button-small" onclick="showSupplierModal(${s.id})">Edit</button>
+            <button class="button-secondary button-small" onclick="deleteSupplier(${s.id})">Delete</button>
+          </td>
         </tr>
       `).join('');
       loadSupplierOptions();
@@ -3060,18 +3848,48 @@
     }
   }
 
-  function updateOrderStatus(orderId, status) {
-    // TODO: Implement via API
-    alert('Status would be updated to: ' + status);
+  async function updateOrderStatus(orderId, status) {
+    if (!currentToken) {
+      alert('Please login again.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert('Unable to update status: ' + getApiErrorMessage(data, 'Unknown error'));
+        await loadAdminOrders();
+        return;
+      }
+
+      await loadAdminOrders();
+      if (document.querySelector('main .page.active')?.dataset.page === 'my-orders') {
+        await loadMyOrders();
+      }
+    } catch (err) {
+      alert('Error updating order status: ' + err.message);
+      await loadAdminOrders();
+    }
   }
 
   function handleAddProduct(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const category = resolveFormCategory('productCategory', 'productNewCategory');
     const payload = {
       name: String(formData.get('name') || '').trim(),
-      category: String(formData.get('category') || '').trim() || null,
+      category,
       barcode: String(formData.get('barcode') || '').trim() || null,
+      image_url: String(formData.get('image_url') || '').trim() || null,
       unit_price: Number(formData.get('unit_price') || 0),
       quantity: Number(formData.get('quantity') || 0),
       min_threshold: Number(formData.get('min_threshold') || 0),
@@ -3099,10 +3917,78 @@
         }
         alert(`Product added: ${data.name}`);
         e.target.reset();
+        saveCategory(payload.category);
         loadAdminProducts();
         loadSupplierOptions();
+        refreshCategoryControls();
       })
       .catch(err => alert(`Error: ${err.message}`));
+  }
+
+  async function showEditProductModal(productId) {
+    const product = adminProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    document.getElementById('editProductName').value = product.name;
+    document.getElementById('editProductCategory').value = product.category || '';
+    document.getElementById('editProductSupplierSelect').value = product.supplier_id || '';
+    document.getElementById('editProductUnitPrice').value = product.unit_price;
+    document.getElementById('editProductQuantity').value = product.quantity;
+    document.getElementById('editProductMinThreshold').value = product.min_threshold;
+    document.getElementById('editProductExpiryDate').value = product.expiry_date ? product.expiry_date.split('T')[0] : '';
+    document.getElementById('editProductBarcode').value = product.barcode || '';
+    document.getElementById('editProductImageUrl').value = product.image_url || '';
+    document.getElementById('editProductNewCategory').value = '';
+    document.getElementById('editProductForm').dataset.productId = productId;
+    setFormFeedback('editProductFormFeedback');
+    await loadSupplierOptions();
+    refreshCategoryControls();
+    document.getElementById('editProductModal').classList.add('active');
+  }
+
+  async function handleEditProduct(e) {
+    e.preventDefault();
+    const productId = Number(document.getElementById('editProductForm').dataset.productId);
+    if (!productId) {
+      alert('Product ID not found.');
+      return;
+    }
+
+    const formData = new FormData(e.target);
+    const category = resolveFormCategory('editProductCategory', 'editProductNewCategory');
+    const payload = {
+      name: String(formData.get('name') || '').trim(),
+      category,
+      barcode: String(formData.get('barcode') || '').trim() || null,
+      image_url: String(formData.get('image_url') || '').trim() || null,
+      unit_price: Number(formData.get('unit_price') || 0),
+      min_threshold: Number(formData.get('min_threshold') || 0),
+      expiry_date: String(formData.get('expiry_date') || '').trim() || null,
+      supplier_id: formData.get('supplier_id') ? Number(formData.get('supplier_id')) : null
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to update product');
+      }
+      if (payload.category) saveCategory(payload.category);
+      setFormFeedback('editProductFormFeedback', 'Product updated successfully.', 'success');
+      await loadAdminProducts();
+      refreshCategoryControls();
+      setTimeout(() => closeModal('editProductModal'), 500);
+    } catch (err) {
+      setFormFeedback('editProductFormFeedback', `Error: ${err.message}`, 'error');
+    }
   }
 
   async function recordExpiredWaste(productId, quantity) {
@@ -3139,30 +4025,179 @@
   }
 
   async function showOrderDetail(orderId) {
-    // TODO: Load order details from API
     const modal = document.getElementById('orderModal');
     const content = document.getElementById('orderModalContent');
-    content.innerHTML = `<p>Order #${orderId} details...</p>`;
+    let order = null;
+
+    if (currentUser?.role === 'customer') {
+      order = customerOrders.find(item => item.id === orderId) || null;
+      if (!order) {
+        try {
+          const response = await fetch(`${API_URL}/orders/me`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+          });
+          const orders = await response.json();
+          customerOrders = Array.isArray(orders) ? orders : [];
+          order = customerOrders.find(item => item.id === orderId) || null;
+        } catch (_) {
+          order = null;
+        }
+      }
+    } else {
+      try {
+        const response = await fetch(`${API_URL}/orders/${orderId}`, {
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        if (response.ok) {
+          order = await response.json();
+        }
+      } catch (_) {
+        order = null;
+      }
+    }
+
+    if (!order) {
+      content.innerHTML = `<p>Order #${orderId} details...</p>`;
+      modal.classList.add('active');
+      return;
+    }
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    content.innerHTML = `
+      <div style="display: grid; gap: 16px;">
+        <div style="padding: 16px; border-radius: 14px; background: linear-gradient(135deg, rgba(20, 95, 74, 0.08), rgba(186, 107, 18, 0.05)); border: 1px solid var(--line);">
+          <p style="margin: 0 0 6px; color: var(--muted);">Order #${order.id}</p>
+          <h4 style="margin: 0;">Thank you for shopping with BidhaaHub.</h4>
+          <p style="margin: 6px 0 0;">${new Date(order.created_at).toLocaleString()}</p>
+        </div>
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map(item => `
+                  <tr>
+                    <td>${item.product_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.unit_price} KES</td>
+                    <td><strong>${item.line_total} KES</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div style="padding: 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);">
+          <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span>Subtotal</span><strong>${order.subtotal} KES</strong></div>
+          <div style="display:flex; justify-content:space-between; margin-bottom: 6px;"><span>Delivery</span><strong>${order.delivery_fee} KES</strong></div>
+          <div style="display:flex; justify-content:space-between; font-size: 1.1rem;"><span>Total</span><strong style="color: var(--accent);">${order.total_amount} KES</strong></div>
+          <p style="margin-top: 10px; color: var(--muted);">Payment: ${order.payment_status || 'pending'} | Status: ${order.status || 'pending'}</p>
+        </div>
+      </div>
+    `;
     modal.classList.add('active');
   }
 
-  function showDarajaSetup() {
-    alert('Daraja setup form - enter your Consumer Key, Secret, Shortcode, and Passkey from Safaricom');
+  function showRestockModal(productId) {
+    const product = adminProducts.find(item => item.id === productId);
+    if (!product) return;
+    document.getElementById('restockProductId').value = String(productId);
+    document.getElementById('restockProductName').value = product.name;
+    document.getElementById('restockQuantity').value = '1';
+    setFormFeedback('restockFormFeedback');
+    document.getElementById('restockModal').classList.add('active');
+  }
+
+  async function handleRestockSubmit(e) {
+    e.preventDefault();
+    const productId = Number(document.getElementById('restockProductId').value);
+    const quantity = Number(document.getElementById('restockQuantity').value);
+    if (!productId || !Number.isFinite(quantity) || quantity <= 0) {
+      setFormFeedback('restockFormFeedback', 'Enter a valid restock quantity.', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/transactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({ product_id: productId, transaction_type: 'restock', quantity })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to restock product');
+      }
+
+      setFormFeedback('restockFormFeedback', 'Product restocked successfully.', 'success');
+      await loadAdminProducts();
+      loadReportsSummary();
+      setTimeout(() => closeModal('restockModal'), 500);
+    } catch (err) {
+      setFormFeedback('restockFormFeedback', `Error: ${err.message}`, 'error');
+    }
   }
 
   function showPayPalSetup() {
     alert('PayPal setup form - enter your Client ID and Secret');
   }
 
-  function saveDarajaKeys(e) {
-    e.preventDefault();
-    alert('Daraja keys saved! (In production, these would be encrypted and stored securely)');
+  function showSupplierModal(supplierId = null) {
+    setFormFeedback('supplierFormFeedback');
+    const form = document.getElementById('supplierForm');
+    form.reset();
+    form.dataset.supplierId = supplierId ? String(supplierId) : '';
+    document.getElementById('supplierId').value = supplierId ? String(supplierId) : '';
+    document.getElementById('supplierModalTitle').textContent = supplierId ? 'Edit Supplier' : 'Add Supplier';
+    document.getElementById('deleteSupplierButton').style.display = supplierId ? 'block' : 'none';
+    if (supplierId) {
+      const supplier = supplierDirectory.find(item => Number(item.id) === Number(supplierId));
+      if (supplier) {
+        form.querySelector('[name="name"]').value = supplier.name || '';
+        form.querySelector('[name="contact_person"]').value = supplier.contact_person || '';
+        form.querySelector('[name="phone"]').value = supplier.phone || '';
+        form.querySelector('[name="email"]').value = supplier.email || '';
+        form.querySelector('[name="lead_time_days"]').value = supplier.lead_time_days ?? 3;
+      }
+    }
+    document.getElementById('supplierModal').classList.add('active');
   }
 
-  function showSupplierModal() {
-    setFormFeedback('supplierFormFeedback');
-    document.getElementById('supplierForm').reset();
-    document.getElementById('supplierModal').classList.add('active');
+  async function deleteCurrentSupplier() {
+    const supplierId = Number(document.getElementById('supplierId').value);
+    if (!supplierId) return;
+    if (!confirm('Delete this supplier? Linked products will keep their stock but lose the supplier reference.')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/suppliers/${supplierId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to delete supplier');
+      }
+      setFormFeedback('supplierFormFeedback', 'Supplier deleted successfully.', 'success');
+      await loadSuppliers();
+      setTimeout(() => closeModal('supplierModal'), 300);
+    } catch (err) {
+      setFormFeedback('supplierFormFeedback', `Error: ${err.message}`, 'error');
+    }
+  }
+
+  async function deleteSupplier(supplierId) {
+    showSupplierModal(supplierId);
+    await deleteCurrentSupplier();
   }
 
   function showDeliveryModal() {
@@ -3184,6 +4219,7 @@
   async function handleSupplierSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const supplierId = Number(formData.get('supplier_id') || 0);
     const payload = {
       name: String(formData.get('name') || '').trim(),
       contact_person: String(formData.get('contact_person') || '').trim() || null,
@@ -3203,8 +4239,8 @@
     }
 
     try {
-      const response = await fetch(`${API_URL}/suppliers`, {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/suppliers${supplierId ? `/${supplierId}` : ''}`, {
+        method: supplierId ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentToken}`
@@ -3214,11 +4250,11 @@
 
       const data = await response.json();
       if (!response.ok) {
-        setFormFeedback('supplierFormFeedback', data.detail || 'Unable to add supplier.', 'error');
+        setFormFeedback('supplierFormFeedback', data.detail || 'Unable to save supplier.', 'error');
         return;
       }
 
-      setFormFeedback('supplierFormFeedback', 'Supplier added successfully.', 'success');
+      setFormFeedback('supplierFormFeedback', supplierId ? 'Supplier updated successfully.' : 'Supplier added successfully.', 'success');
       await loadSuppliers();
       setTimeout(() => closeModal('supplierModal'), 250);
     } catch (err) {
@@ -3327,6 +4363,7 @@
     if (deliveryMethod) {
       deliveryMethod.addEventListener('change', renderCheckout);
     }
+
   });
 
   window.addEventListener('hashchange', () => {

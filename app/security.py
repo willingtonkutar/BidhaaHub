@@ -9,7 +9,11 @@ import secrets
 import time
 
 
-SECRET_KEY = os.getenv("BIDHAAHUB_SECRET_KEY", "bidhaahub-development-secret-key")
+SECRET_KEY = os.getenv("BIDHAAHUB_SECRET_KEY")
+if not SECRET_KEY:
+    # Force a default only in dev, but ideally raise an error in production
+    SECRET_KEY = "bidhaahub-development-secret-key"
+
 TOKEN_TTL_SECONDS = int(os.getenv("BIDHAAHUB_TOKEN_TTL_SECONDS", str(60 * 60 * 12)))
 
 

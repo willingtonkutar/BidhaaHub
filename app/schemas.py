@@ -15,6 +15,14 @@ class SupplierCreate(SupplierBase):
     pass
 
 
+class SupplierUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    contact_person: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    lead_time_days: int | None = Field(default=None, ge=1, le=90)
+
+
 class SupplierRead(SupplierBase):
     id: int
 
@@ -60,6 +68,7 @@ class ProductBase(BaseModel):
     quantity: int = Field(default=0, ge=0)
     min_threshold: int = Field(default=5, ge=0)
     expiry_date: date | None = None
+    image_url: str | None = Field(default=None, max_length=500)
     supplier_id: int | None = None
 
 
@@ -72,9 +81,11 @@ class ProductUpdate(BaseModel):
     category: str | None = None
     barcode: str | None = None
     unit_price: float | None = Field(default=None, gt=0)
+    quantity: int | None = Field(default=None, ge=0)
     min_threshold: int | None = Field(default=None, ge=0)
     expiry_date: date | None = None
     supplier_id: int | None = None
+    image_url: str | None = Field(default=None, max_length=500)
 
 
 class ProductRead(ProductBase):
@@ -94,6 +105,7 @@ class StorefrontProductRead(BaseModel):
     category: str | None = None
     unit_price: float
     quantity: int
+    image_url: str | None = None
     stock_status: str
 
     model_config = ConfigDict(from_attributes=True)
@@ -213,6 +225,11 @@ class PaymentRead(BaseModel):
     status: str
     amount: float
     currency: str
+    checkout_request_id: str | None = None
+    merchant_request_id: str | None = None
+    mpesa_receipt_number: str | None = None
+    mpesa_phone_number: str | None = None
+    mpesa_result_description: str | None = None
     provider_reference: str | None
     created_at: datetime
     updated_at: datetime
@@ -223,6 +240,7 @@ class PaymentRead(BaseModel):
 class PaymentInitiate(BaseModel):
     order_id: int
     provider: str = Field(pattern="^(mpesa_daraja|paypal|mock_card|cash_on_delivery)$")
+    phone_number: str | None = None
 
 
 class DeliveryOptionRead(BaseModel):
