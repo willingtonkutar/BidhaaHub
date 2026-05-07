@@ -1994,11 +1994,11 @@
 
     <section class="auth-route-panel login-container" data-auth-page="customer">
       <p class="auth-kicker">Customer Access Portal</p>
-      <h2>Welcome back</h2>
-      <p>Sign in to shop, manage your cart, and track orders.</p>
+      <h2>Welcome to BidhaaHub</h2>
+      <p>Seamless shopping, tailored for you.</p>
 
       <div class="social-login">
-        <button type="button" class="google-btn">Continue with Google</button>
+        <button type="button" class="google-btn">Sign in securely with Google</button>
       </div>
 
       <div class="divider">or</div>
@@ -2012,34 +2012,34 @@
           <label>Password</label>
           <input name="password" type="password" placeholder="••••••••" required />
         </div>
-        <button type="submit" class="login-btn">Login</button>
+        <button type="submit" class="login-btn">Sign In</button>
       </form>
 
       <p class="signup-text">
-        New here? <a href="#/customer/signup" onclick="openSignupModal(); return false;">Create an account</a>
+        Join BidhaaHub today. <a href="#/customer/signup" onclick="openSignupModal(); return false;">Create your premium account</a>
       </p>
     </section>
 
     <section class="auth-route-panel admin-login-container hidden" data-auth-page="admin">
       <p class="auth-kicker">Admin Access Portal</p>
-      <h2>Admin Access</h2>
-      <p>Only approved staff can sign in here.</p>
+      <h2>BidhaaHub Admin Portal</h2>
+      <p>Sign in to manage products, suppliers, and deliveries.</p>
 
       <form class="admin-login-form" id="adminLoginForm" onsubmit="handleLogin(event, 'admin')">
         <div class="form-group">
-          <label>Admin Email</label>
+          <label>Work Email</label>
           <input name="email" type="email" placeholder="admin@bidhaahub.local" required />
         </div>
         <div class="form-group">
-          <label>Password</label>
+          <label>Secure Password</label>
           <input name="password" type="password" placeholder="••••••••" required />
         </div>
-        <button type="submit" class="admin-login-btn">Login as Admin</button>
+        <button type="submit" class="admin-login-btn">Access Dashboard</button>
       </form>
 
       <div class="auth-note">
-        <p><strong>Access note:</strong></p>
-        <p>Admin accounts are created manually through the backend and are not self-service.</p>
+        <p><strong>Authorized access only.</strong></p>
+        <p>Contact the system administrator for access.</p>
       </div>
     </div>
   </div>
@@ -2554,7 +2554,7 @@
       <h4>Explore</h4>
       <button type="button" class="footer-link-btn" onclick="landingNavigate('shop')">Shop</button>
       <button type="button" class="footer-link-btn" onclick="landingNavigate('manage-store')">Manage Store</button>
-      <button type="button" class="footer-link-btn" onclick="landingNavigate('login')">Login</button>
+      <button type="button" class="footer-link-btn" onclick="landingNavigate('login')">Sign In</button>
     </div>
     <div class="footer-links">
       <h4>Company</h4>
@@ -2589,7 +2589,7 @@
 <div class="modal signup-modal" id="signupModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Create Account</h3>
+      <h3>Create your premium account</h3>
       <button class="modal-close" onclick="closeSignupModal()">✕</button>
     </div>
     <form id="signupForm" onsubmit="handleRegister(event, 'customer')">
@@ -2605,7 +2605,7 @@
         <label>Password</label>
         <input name="password" type="password" placeholder="••••••••" required />
       </div>
-      <button type="submit" class="button-secondary" style="width: 100%; min-height: 50px;">Create Account</button>
+      <button type="submit" class="button-secondary" style="width: 100%; min-height: 50px;">Create your premium account</button>
     </form>
   </div>
 </div>
