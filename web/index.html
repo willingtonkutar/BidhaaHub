@@ -333,7 +333,6 @@
       display: flex;
       gap: 25px;
       overflow: hidden;
-      animation: scrollBrands 25s linear infinite;
       width: max-content;
       will-change: transform;
     }
@@ -346,11 +345,6 @@
       border: 1px solid rgba(255,255,255,0.1);
       background: rgba(255,255,255,0.05);
       flex-shrink: 0;
-    }
-
-    @keyframes scrollBrands {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
     }
 
     .meet-section {
@@ -977,6 +971,86 @@
       gap: 16px;
       margin-bottom: 18px;
     }
+
+    /* Sticky primary topbar (shop/customer) */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1200;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, rgba(11,17,32,0.9), rgba(11,17,32,0.85));
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .primary-nav {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      margin-left: 18px;
+    }
+
+    .primary-nav a {
+      color: #f3f4f6;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 8px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .primary-nav a:hover {
+      background: rgba(255,255,255,0.03);
+      color: var(--accent);
+    }
+
+    .nav-icons { display: flex; gap: 10px; align-items: center; }
+
+    .shop-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+
+    .breadcrumbs { color: var(--muted); font-size: 0.95rem; }
+
+    .page-title { font-size: 2.4rem; margin: 6px 0 0; color: var(--ink); }
+
+    .shop-controls { display:flex; gap:12px; align-items:center; }
+
+    .filter-bar { display:flex; gap:12px; align-items:center; }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .product-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .product-card:hover { transform: translateY(-6px); box-shadow: var(--shadow); }
+
+    .product-image { height: 180px; display: grid; place-items: center; background: rgba(0,0,0,0.03); }
+
+    .product-image img { max-width: 100%; max-height: 100%; object-fit: cover; display:block; }
+
+    .product-info { padding: 12px; display: grid; gap:8px; }
+
+    .product-name { font-weight: 700; color: var(--ink); }
+
+    .product-price { color: var(--accent); font-weight: 800; }
+
+    .product-actions { display:flex; gap:8px; margin-top:6px; }
 
     .topbar-actions {
       display: flex;
@@ -1858,7 +1932,7 @@
         <p>All-in-one platform for grocery stores to manage stock, process orders, and track deliveries in real-time.</p>
 
         <div class="hero-buttons">
-          <button type="button" class="btn-primary" onclick="landingNavigate('shop')">Shop Now</button>
+          <button type="button" class="btn-primary" onclick="goToLogin('customer')">Shop Now</button>
         </div>
       </div>
     </section>
@@ -2055,9 +2129,21 @@
           <h2>BidhaaHub <small id="roleLabel">Admin</small></h2>
           <span id="roleTagline" style="display:block; color: var(--muted); font-size: 0.85rem; margin-top: 2px;">Inventory control and operations.</span>
         </div>
+        <nav class="primary-nav" aria-label="Shop categories">
+          <a href="#" onclick="setShopCategoryFilter('fresh produce'); return false;">Fresh Produce</a>
+          <a href="#" onclick="setShopCategoryFilter('dairy'); return false;">Dairy</a>
+          <a href="#" onclick="setShopCategoryFilter('grains'); return false;">Grains</a>
+          <a href="#" onclick="setShopCategoryFilter('pantry staples'); return false;">Pantry Staples</a>
+        </nav>
       </div>
       <div class="topbar-actions">
         <span id="userGreeting" style="color: var(--muted); font-size: 0.9rem;"></span>
+        <div class="nav-icons">
+          <button class="icon-button" title="Search">🔍</button>
+          <button class="icon-button" title="Favorites">♡</button>
+          <button class="icon-button" title="Account" onclick="showPage('profile')">👤</button>
+          <button class="icon-button" title="Cart" onclick="showPage('cart')">🛒</button>
+        </div>
         <details class="admin-quick-menu" id="adminQuickMenu">
           <summary>Quick Menu ▾</summary>
           <div class="admin-quick-list">
@@ -2072,17 +2158,6 @@
         </details>
         <button class="icon-button" onclick="toggleTheme()">🌙</button>
         <button class="button-ghost" onclick="logout()">Logout</button>
-      </div>
-    </div>
-
-    <div class="customer-top-nav" id="customerTopNav">
-      <button class="customer-nav-toggle" id="customerNavToggle" aria-expanded="false" onclick="toggleCustomerMenu()">☰</button>
-      <div class="customer-nav-links" id="customerNavLinks">
-        <button type="button" data-customer-page="shop" onclick="showPage('shop')">🛍 Shop</button>
-        <button type="button" data-customer-page="cart" onclick="showPage('cart')">🛒 Cart</button>
-        <button type="button" data-customer-page="checkout" onclick="showPage('checkout')">💳 Checkout</button>
-        <button type="button" data-customer-page="my-orders" onclick="showPage('my-orders')">📦 My Orders</button>
-        <button type="button" data-customer-page="profile" onclick="showPage('profile')">👤 Profile</button>
       </div>
     </div>
 
@@ -2108,17 +2183,30 @@
         </section>
 
         <section class="page active" data-page="shop">
-          <h2>🛍️ Shop</h2>
-          <p>Browse and purchase products from our catalog.</p>
-          <div class="filter-bar">
-            <input type="text" placeholder="Search products..." id="searchInput" onkeyup="filterProducts()">
-            <select id="categoryFilter" onchange="filterProducts()">
-              <option value="">All Categories</option>
-              <option value="dairy">Dairy</option>
-              <option value="grains">Grains</option>
-              <option value="fresh">Fresh Produce</option>
-            </select>
+          <div class="shop-header">
+            <div>
+              <div class="breadcrumbs">Home / Shop / Groceries</div>
+              <h1 class="page-title">Fresh Groceries</h1>
+            </div>
+            <div class="shop-controls">
+              <div class="filter-bar">
+                <input type="text" placeholder="Search products..." id="searchInput" onkeyup="filterProducts()">
+                <select id="categoryFilter" onchange="filterProducts()">
+                  <option value="">All Categories</option>
+                  <option value="dairy">Dairy</option>
+                  <option value="grains">Grains</option>
+                  <option value="fresh">Fresh Produce</option>
+                </select>
+                <select id="sortBy" onchange="filterProducts()">
+                  <option value="newest">Newest</option>
+                  <option value="price_asc">Price: Low → High</option>
+                  <option value="price_desc">Price: High → Low</option>
+                  <option value="popular">Popular</option>
+                </select>
+              </div>
+            </div>
           </div>
+
           <div class="product-grid" id="shopGrid"></div>
         </section>
 
@@ -2793,7 +2881,7 @@
   let suppressHashRouting = false;
   let supplierDirectory = [];
   let customerOrders = [];
-  const DEFAULT_CATEGORIES = ['Dairy', 'Grains', 'Fresh Produce'];
+  const DEFAULT_CATEGORIES = ['Dairy', 'Grains', 'Fresh Produce', 'Pantry Staples'];
 
   const PAGE_TO_ROUTE = {
     'customer-home': '/customer/home',
@@ -2818,9 +2906,38 @@
   };
 
   const POST_LOGIN_ROUTE_BY_ROLE = {
-    customer: '/customer/home',
+    customer: '/shop',
     admin: '/admin/dashboard'
   };
+
+  function initSeamlessCarousel() {
+    const track = document.querySelector('.brand-track');
+    if (!track) return;
+
+    const images = Array.from(track.children);
+    if (!images.length) return;
+
+    const imageWidth = images[0].offsetWidth + 25;
+
+    images.forEach(img => {
+      const clone = img.cloneNode(true);
+      track.appendChild(clone);
+    });
+
+    const totalWidth = images.length * imageWidth;
+    let position = 0;
+
+    function animate() {
+      position -= 0.5;
+      if (Math.abs(position) >= totalWidth) {
+        position = 0;
+      }
+      track.style.transform = `translateX(${position}px)`;
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  }
 
   // ===== LANDING PAGE FUNCTIONS =====
   function landingShowAuth(role) {
@@ -3273,12 +3390,35 @@
       return product.image_url.trim();
     }
 
-    const queryParts = [product?.name, product?.category]
-      .filter(Boolean)
-      .map(value => String(value).trim())
-      .filter(Boolean);
-    const query = queryParts.length > 0 ? queryParts.join(',') : 'grocery product';
-    return `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(query)}`;
+    const category = String(product?.category || '').trim().toLowerCase();
+    const name = String(product?.name || '').trim().toLowerCase();
+
+    if (category.includes('fresh') || /banana|tomato|spinach|vegetable|fruit|apple|carrot/.test(name)) {
+      return 'assets/images/popular/fresh_vegetables.png';
+    }
+
+    if (category.includes('dairy') || /milk|yogurt|cheese|butter|cream/.test(name)) {
+      return 'assets/images/popular/organic_pics.png';
+    }
+
+    if (category.includes('grain') || /rice|flour|maize|corn|cereal|sugar|beans/.test(name)) {
+      return 'assets/images/popular/Groceries.png';
+    }
+
+    if (category.includes('pantry') || /oil|salt|soap|detergent|pasta|sauce/.test(name)) {
+      return 'assets/images/popular/seasonal_fruits.png';
+    }
+
+    return 'assets/images/popular/Groceries.png';
+  }
+
+  function setShopCategoryFilter(category) {
+    const filterSelect = document.getElementById('categoryFilter');
+    if (filterSelect) {
+      filterSelect.value = String(category || '');
+    }
+    showPage('shop');
+    filterProducts();
   }
 
   function showToast(message, type = 'success') {
@@ -3373,11 +3513,11 @@
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
-          <div class="product-price">${p.unit_price} KES</div>
+          <div class="product-price">${formatKes(p.unit_price)}</div>
           <div class="product-stock">Stock: ${p.quantity}</div>
           <div class="product-actions">
-            <button class="button button-small" onclick='addToCart(event, ${p.id}, ${JSON.stringify(p.name)}, ${p.unit_price})'>Add</button>
-            <button class="button-ghost button-small" onclick="showProductDetail(${p.id})">View</button>
+            <button class="button button-small" onclick='addToCart(event, ${p.id}, ${JSON.stringify(p.name)}, ${p.unit_price})'>Add to Cart</button>
+            <button class="button-ghost button-small" onclick="showProductDetail(${p.id})">View Details</button>
           </div>
         </div>
       </div>
@@ -3488,7 +3628,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div>
             <p style="color: var(--muted); margin-bottom: 4px;">Price</p>
-            <h3 style="color: var(--accent);">${product.unit_price} KES</h3>
+            <h3 style="color: var(--accent);">${formatKes(product.unit_price)}</h3>
           </div>
           <div>
             <p style="color: var(--muted); margin-bottom: 4px;">Stock Available</p>
@@ -3504,6 +3644,7 @@
   function filterProducts() {
     const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
     const selectedCategory = (document.getElementById('categoryFilter')?.value || '').toLowerCase();
+    const sortBy = (document.getElementById('sortBy')?.value || '').toLowerCase();
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
 
@@ -3524,6 +3665,19 @@
     if (filtered.length === 0) {
       grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--muted);">No products match your search.</p>';
       return;
+    }
+
+    // Sorting
+    if (sortBy === 'price_asc') {
+      filtered.sort((a, b) => Number(a.unit_price || 0) - Number(b.unit_price || 0));
+    } else if (sortBy === 'price_desc') {
+      filtered.sort((a, b) => Number(b.unit_price || 0) - Number(a.unit_price || 0));
+    } else if (sortBy === 'newest') {
+      filtered.sort((a, b) => {
+        const ta = new Date(a.created_at || a.updated_at || 0).getTime();
+        const tb = new Date(b.created_at || b.updated_at || 0).getTime();
+        return tb - ta;
+      });
     }
 
     grid.innerHTML = renderProductCards(filtered);
@@ -4645,6 +4799,8 @@
     if (deliveryMethod) {
       deliveryMethod.addEventListener('change', renderCheckout);
     }
+
+    initSeamlessCarousel();
 
   });
 
