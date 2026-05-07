@@ -47,6 +47,8 @@
       margin: 0;
       color: var(--ink);
       font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+      width: 100%;
+      overflow-x: hidden;
       background:
         radial-gradient(circle at 0% 0%, rgba(20, 95, 74, 0.18), transparent 28%),
         radial-gradient(circle at 100% 0%, rgba(186, 107, 18, 0.16), transparent 26%),
@@ -68,6 +70,9 @@
       display: none;
       min-height: 100vh;
       padding: 0;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
     }
 
     .landing-view.active {
@@ -125,6 +130,8 @@
       background: none !important;
       border: none;
       box-shadow: none;
+      width: 100%;
+      overflow-x: hidden;
     }
 
     /* HERO VIDEO SECTION */
@@ -132,6 +139,7 @@
       position: relative;
       height: 100vh;
       width: 100%;
+      max-width: 100%;
       overflow: hidden;
       display: flex;
       justify-content: center;
@@ -165,25 +173,29 @@
 
     .hero-content {
       max-width: 800px;
+      width: min(90%, 800px);
       color: white;
       padding: 0 20px;
+      margin: 0 auto;
       animation: fadeIn 1.5s ease-in-out;
       position: relative;
       z-index: 1;
     }
 
     .hero-content h1 {
-      font-size: 3.2rem;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
       font-weight: 800;
       margin-bottom: 20px;
       color: #fff;
+      word-break: break-word;
     }
 
     .hero-content p {
-      font-size: 1.25rem;
+      font-size: clamp(0.9rem, 3vw, 1.25rem);
       margin-bottom: 30px;
       opacity: 0.9;
       color: #fff;
+      word-break: break-word;
     }
 
     .hero-buttons {
@@ -234,6 +246,10 @@
       gap: 24px;
       margin-top: 60px;
       padding: 0 40px 60px;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      width: 100%;
     }
 
     .preview-section {
@@ -250,6 +266,10 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 24px;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
     }
 
     .preview-card {
@@ -294,6 +314,10 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 28px;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
     }
 
     .why-card {
@@ -321,6 +345,8 @@
       text-align: center;
       background: transparent;
       margin: 0;
+      width: 100%;
+      overflow: hidden;
     }
 
     .brand-carousel h2 {
@@ -332,7 +358,6 @@
     .brand-track {
       display: flex;
       gap: 25px;
-      overflow: hidden;
       width: max-content;
       will-change: transform;
     }
@@ -376,10 +401,12 @@
 
     .meet-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 30px;
       max-width: 1200px;
       margin: 0 auto;
+      width: 100%;
+      padding: 0 20px;
       position: relative;
       z-index: 1;
     }
@@ -1821,6 +1848,13 @@
 
       .landing-header {
         padding: 16px 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .landing-header-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
       .preview-section {
@@ -2006,10 +2040,6 @@
     <section class="brand-carousel">
       <h2>Featured Deals</h2>
       <div class="brand-track">
-          <img src="assets/images/popular/fresh_vegetables.png" alt="">
-          <img src="assets/images/popular/seasonal_fruits.png" alt="">
-          <img src="assets/images/popular/groceries.png" alt="">
-          <img src="assets/images/popular/organic_pics.png" alt="">
           <img src="assets/images/popular/fresh_vegetables.png" alt="">
           <img src="assets/images/popular/seasonal_fruits.png" alt="">
           <img src="assets/images/popular/groceries.png" alt="">
@@ -2912,7 +2942,8 @@
 
   function initSeamlessCarousel() {
     const track = document.querySelector('.brand-track');
-    if (!track) return;
+    if (!track || track.dataset.carouselReady === 'true') return;
+    track.dataset.carouselReady = 'true';
 
     const images = Array.from(track.children);
     if (!images.length) return;
@@ -2926,11 +2957,22 @@
 
     const totalWidth = images.length * imageWidth;
     let position = 0;
+    let isPaused = false;
+
+    track.addEventListener('mouseenter', () => {
+      isPaused = true;
+    });
+
+    track.addEventListener('mouseleave', () => {
+      isPaused = false;
+    });
 
     function animate() {
-      position -= 0.5;
-      if (Math.abs(position) >= totalWidth) {
-        position = 0;
+      if (!isPaused) {
+        position -= 0.5;
+        if (Math.abs(position) >= totalWidth) {
+          position = 0;
+        }
       }
       track.style.transform = `translateX(${position}px)`;
       requestAnimationFrame(animate);
