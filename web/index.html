@@ -710,6 +710,192 @@
       min-height: 50px;
     }
 
+    .auth-shell {
+      min-height: 100vh;
+      padding: 24px 0 40px;
+    }
+
+    .auth-shell .wrap {
+      max-width: 980px;
+    }
+
+    .auth-shell-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding: 16px 0;
+    }
+
+    .auth-shell-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .auth-route-panel {
+      max-width: 440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 34px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .auth-route-panel h2 {
+      font-size: clamp(1.9rem, 3vw, 2.2rem);
+      margin-bottom: 12px;
+    }
+
+    .auth-kicker {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .login-container {
+      background: #1e1e1e;
+      color: #ffffff;
+    }
+
+    .login-container .auth-kicker,
+    .login-container p,
+    .login-container label,
+    .login-container .divider,
+    .login-container .signup-text {
+      color: #d1d5db;
+    }
+
+    .login-container input {
+      background: #2a2a2a;
+      color: #fff;
+      border-color: #444;
+    }
+
+    .login-container input::placeholder {
+      color: #9ca3af;
+    }
+
+    .social-login {
+      display: grid;
+      gap: 12px;
+      margin: 20px 0 16px;
+    }
+
+    .social-login button {
+      width: 100%;
+      min-height: 48px;
+      border: none;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .google-btn {
+      background: #ffffff;
+      color: #1f2937;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 18px 0;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.22;
+    }
+
+    .login-form,
+    .admin-login-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .login-form input,
+    .admin-login-form input {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font: inherit;
+    }
+
+    .login-btn,
+    .admin-login-btn {
+      width: 100%;
+      min-height: 48px;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .login-btn {
+      background: #28a745;
+    }
+
+    .admin-login-container {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .admin-login-container .auth-kicker,
+    .admin-login-container p,
+    .admin-login-container label {
+      color: #4b5563;
+    }
+
+    .admin-login-container input {
+      background: #fff;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+
+    .admin-login-btn {
+      background: #4a148c;
+    }
+
+    .signup-text {
+      margin-top: 18px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+
+    .signup-text a {
+      color: #7dd3fc;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .auth-note {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: inherit;
+    }
+
     .signup-modal .modal-content {
       max-width: 520px;
     }
@@ -1783,63 +1969,65 @@
 <!-- AUTHENTICATION SHELL -->
 <div class="auth-shell hidden" id="authShell">
   <div class="wrap">
-    <div class="topbar">
+    <div class="auth-shell-header">
       <div class="brand">
         <div class="mark">📦</div>
-        <h2>BidhaaHub <small>Admin & Storefront</small></h2>
+        <h2>BidhaaHub <small>Access Portal</small></h2>
       </div>
-      <div class="topbar-actions">
-        <button class="icon-button" onclick="toggleTheme()">🌙</button>
-        <button class="button-ghost" onclick="logout()">Logout</button>
+      <div class="auth-shell-actions">
+        <button type="button" class="icon-button" onclick="toggleTheme()">🌙</button>
+        <button type="button" class="button-ghost" onclick="showLandingView()">Back to Home</button>
       </div>
     </div>
 
-    <div class="auth-panel-container">
-      <h2>Access Portal</h2>
-      <div class="button-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button type="button" class="button-ghost active" data-auth-mode="customer" onclick="switchAuthMode('customer')">🛍️ Customer</button>
-        <button type="button" class="button-ghost" data-auth-mode="admin" onclick="switchAuthMode('admin')">⚙️ Admin</button>
+    <section class="auth-route-panel login-container" data-auth-page="customer">
+      <p class="auth-kicker">Customer Access Portal</p>
+      <h2>Welcome back</h2>
+      <p>Sign in to shop, manage your cart, and track orders.</p>
+
+      <div class="social-login">
+        <button type="button" class="google-btn">Continue with Google</button>
       </div>
 
-      <div class="auth-panel" id="customerAuthPanel">
-        <h3>Customer Access</h3>
-        <p>Login to browse products, manage cart, and track orders.</p>
-        <form id="customerLoginForm" onsubmit="handleLogin(event, 'customer')">
-          <div class="form-group">
-            <label>Email</label>
-            <input name="email" type="email" placeholder="your@email.com" required />
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input name="password" type="password" placeholder="••••••••" required />
-          </div>
-          <button type="submit" class="button">Login as Customer</button>
-        </form>
-        <div class="create-account-shell">
-          <p>New here? Create a customer account to place orders and track deliveries.</p>
-          <button type="button" class="button-secondary" onclick="openSignupModal()">Create Account</button>
-        </div>
-      </div>
+      <div class="divider">or</div>
 
-      <div class="auth-panel hidden" id="adminAuthPanel">
-        <h3>Admin Access</h3>
-        <p>Login to manage products, orders, suppliers, and delivery.</p>
-        <form id="adminLoginForm" onsubmit="handleLogin(event, 'admin')">
-          <div class="form-group">
-            <label>Email</label>
-            <input name="email" type="email" placeholder="admin@bidhaahub.local" required />
-          </div>
-          <div class="form-group">
-            <label>Password</label>
-            <input name="password" type="password" placeholder="••••••••" required />
-          </div>
-          <button type="submit" class="button">Login as Admin</button>
-        </form>
-        <div style="margin-top: 20px; padding: 14px; background: rgba(186, 107, 18, 0.1); border-radius: 10px; border: 1px solid rgba(186, 107, 18, 0.2);">
-          <p><strong>Demo Credentials:</strong></p>
-          <p>Email: admin@bidhaahub.local</p>
-          <p>Password: Admin123!</p>
+      <form class="login-form" id="customerLoginForm" onsubmit="handleLogin(event, 'customer')">
+        <div class="form-group">
+          <label>Email</label>
+          <input name="email" type="email" placeholder="your@email.com" required />
         </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input name="password" type="password" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="login-btn">Login</button>
+      </form>
+
+      <p class="signup-text">
+        New here? <a href="#/customer/signup" onclick="openSignupModal(); return false;">Create an account</a>
+      </p>
+    </section>
+
+    <section class="auth-route-panel admin-login-container hidden" data-auth-page="admin">
+      <p class="auth-kicker">Admin Access Portal</p>
+      <h2>Admin Access</h2>
+      <p>Only approved staff can sign in here.</p>
+
+      <form class="admin-login-form" id="adminLoginForm" onsubmit="handleLogin(event, 'admin')">
+        <div class="form-group">
+          <label>Admin Email</label>
+          <input name="email" type="email" placeholder="admin@bidhaahub.local" required />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input name="password" type="password" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="admin-login-btn">Login as Admin</button>
+      </form>
+
+      <div class="auth-note">
+        <p><strong>Access note:</strong></p>
+        <p>Admin accounts are created manually through the backend and are not self-service.</p>
       </div>
     </div>
   </div>
@@ -2596,13 +2784,13 @@
   const DEFAULT_CATEGORIES = ['Dairy', 'Grains', 'Fresh Produce'];
 
   const PAGE_TO_ROUTE = {
-    'customer-home': '/customer',
+    'customer-home': '/customer/home',
     'shop': '/shop',
     'cart': '/cart',
     'checkout': '/checkout',
     'my-orders': '/orders',
     'profile': '/profile',
-    'home': '/dashboard',
+    'home': '/admin/dashboard',
     'products': '/products',
     'add-product': '/products/new',
     'suppliers': '/suppliers',
@@ -2612,43 +2800,45 @@
     'reports': '/reports'
   };
 
+  const AUTH_ROUTE_BY_ROLE = {
+    customer: '/customer/login',
+    admin: '/admin/login'
+  };
+
+  const POST_LOGIN_ROUTE_BY_ROLE = {
+    customer: '/customer/home',
+    admin: '/admin/dashboard'
+  };
+
   // ===== LANDING PAGE FUNCTIONS =====
   function landingShowAuth(role) {
     goToLogin(role);
   }
 
   function landingNavigate(target) {
-    const routeMap = {
-      shop: { role: 'customer', hash: '/shop' },
-      'manage-store': { role: 'admin', hash: '/dashboard' },
-      login: { role: 'customer', hash: '/customer' }
-    };
-
-    const targetConfig = routeMap[target];
-    if (!targetConfig) return;
-
-    if (currentUser) {
-      if (target === 'shop' && currentUser.role === 'customer') {
+    if (target === 'shop') {
+      if (currentUser?.role === 'customer') {
         showWorkspace();
         showPage('shop');
         return;
       }
+      goToLogin('customer');
+      return;
+    }
 
-      if (target === 'manage-store' && currentUser.role !== 'customer') {
+    if (target === 'manage-store') {
+      if (currentUser && currentUser.role !== 'customer') {
         showWorkspace();
         showPage('home');
         return;
       }
-
-      if (target === 'login' && currentUser.role === 'customer') {
-        showWorkspace();
-        showPage('customer-home');
-        return;
-      }
+      goToLogin('admin');
+      return;
     }
 
-    window.location.hash = targetConfig.hash;
-    goToLogin(targetConfig.role);
+    if (target === 'login') {
+      goToLogin('customer');
+    }
   }
 
   function goToLogin(role) {
@@ -2663,10 +2853,40 @@
       document.body.classList.remove('admin-mode');
     }
 
+    showAuthRoute(role === 'admin' ? 'admin' : 'customer');
+  }
+
+  function showLandingView() {
+    document.getElementById('workspace').classList.add('hidden');
+    document.getElementById('authShell').classList.add('hidden');
+    document.getElementById('landingView').classList.remove('hidden');
+    if (window.location.hash) {
+      window.location.hash = '';
+    }
+  }
+
+  function resolveAuthRoleFromPath(path) {
+    const normalized = normalizeRoutePath(path);
+    if (normalized === '/admin/login') return 'admin';
+    if (normalized === '/customer/login' || normalized === '/customer/signup') return 'customer';
+    return null;
+  }
+
+  function showAuthRoute(role, options = {}) {
+    const { updateHash = true } = options;
+    const authRole = role === 'admin' ? 'admin' : 'customer';
+
     document.getElementById('workspace').classList.add('hidden');
     document.getElementById('landingView').classList.add('hidden');
     document.getElementById('authShell').classList.remove('hidden');
-    switchAuthMode(role === 'admin' ? 'admin' : 'customer');
+
+    document.querySelectorAll('[data-auth-page]').forEach(panel => {
+      panel.classList.toggle('hidden', panel.dataset.authPage !== authRole);
+    });
+
+    if (updateHash) {
+      window.location.hash = AUTH_ROUTE_BY_ROLE[authRole];
+    }
   }
 
   function normalizeRoutePath(raw) {
@@ -2729,6 +2949,16 @@
     showPage(pageId, { updateHash: false });
   }
 
+  function applyRouteForUnauthenticatedUser() {
+    const authRole = resolveAuthRoleFromPath(window.location.hash);
+    if (authRole) {
+      showAuthRoute(authRole, { updateHash: false });
+      return;
+    }
+
+    showLandingView();
+  }
+
   function openSignupModal() {
     document.getElementById('signupModal').classList.add('active');
   }
@@ -2738,11 +2968,7 @@
   }
 
   function switchAuthMode(mode) {
-    document.querySelectorAll('[data-auth-mode]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.authMode === mode);
-    });
-    document.getElementById('customerAuthPanel').classList.toggle('hidden', mode !== 'customer');
-    document.getElementById('adminAuthPanel').classList.toggle('hidden', mode !== 'admin');
+    showAuthRoute(mode === 'admin' ? 'admin' : 'customer', { updateHash: true });
   }
 
   // ===== AUTH FUNCTIONS =====
@@ -2764,6 +2990,7 @@
         currentUser = data.user;
         localStorage.setItem('token', currentToken);
         localStorage.setItem('user', JSON.stringify(currentUser));
+        window.location.hash = POST_LOGIN_ROUTE_BY_ROLE[role === 'admin' ? 'admin' : 'customer'];
         showWorkspace();
       } else {
         alert('Login failed: ' + (data.detail || 'Unknown error'));
@@ -4389,6 +4616,8 @@
       currentUser = JSON.parse(user);
       cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
       showWorkspace();
+    } else {
+      applyRouteForUnauthenticatedUser();
     }
 
     // Populate checkout with user data if authenticated
@@ -4408,7 +4637,10 @@
   });
 
   window.addEventListener('hashchange', () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      applyRouteForUnauthenticatedUser();
+      return;
+    }
     applyRouteForCurrentUser();
   });
 </script>
