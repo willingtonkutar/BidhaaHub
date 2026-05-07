@@ -298,6 +298,246 @@
       padding: 16px;
     }
 
+    /* PAIGE-STYLE SHOP PAGE */
+    .landing-view .shop-hero {
+      background: linear-gradient(135deg, #2a6b3c 0%, #1a4a2a 100%);
+      border-radius: 28px;
+      padding: 48px 40px;
+      margin-bottom: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .landing-view .shop-hero-content {
+      max-width: 640px;
+    }
+
+    .landing-view .shop-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      padding: 6px 16px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .landing-view .shop-hero h1 {
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .landing-view .shop-hero p {
+      color: rgba(255,255,255,0.85);
+      max-width: 520px;
+    }
+
+    .landing-view .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .landing-view .shop-header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .landing-view .shop-header-left h2 {
+      font-size: 1.3rem;
+    }
+
+    .landing-view .product-count {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .landing-view .sort-dropdown select {
+      padding: 8px 16px;
+      border-radius: 30px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 0.85rem;
+    }
+
+    .landing-view .category-pills {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+
+    .landing-view .pill {
+      padding: 8px 20px;
+      border-radius: 40px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .landing-view .pill:hover {
+      color: var(--accent);
+    }
+
+    .landing-view .pill.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .landing-view .search-wrapper-enhanced {
+      margin-bottom: 32px;
+    }
+
+    .landing-view .search-wrapper-enhanced input {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 50px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 0.95rem;
+    }
+
+    .landing-view .product-grid-premium {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 28px;
+    }
+
+    .landing-view .product-card-premium {
+      background: var(--panel);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      border: 1px solid var(--line);
+      cursor: pointer;
+      box-shadow: 0 8px 26px rgba(15, 23, 42, 0.04);
+    }
+
+    .landing-view .product-card-premium:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+    }
+
+    .landing-view .product-image-premium {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+
+    .landing-view .product-image-premium img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+      display: block;
+    }
+
+    .landing-view .product-card-premium:hover .product-image-premium img {
+      transform: scale(1.03);
+    }
+
+    .landing-view .product-badge-premium {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 2;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(11, 17, 32, 0.8);
+      color: #fff;
+    }
+
+    .landing-view .product-badge-premium.low-stock {
+      background: rgba(217, 119, 6, 0.92);
+    }
+
+    .landing-view .product-badge-premium.new {
+      background: rgba(22, 163, 74, 0.92);
+    }
+
+    .landing-view .product-actions-premium {
+      position: absolute;
+      bottom: -64px;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      padding: 12px;
+      text-align: center;
+      transition: bottom 0.3s ease;
+      z-index: 2;
+    }
+
+    .landing-view .product-card-premium:hover .product-actions-premium {
+      bottom: 0;
+    }
+
+    .landing-view .product-actions-premium button {
+      width: 100%;
+      background: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 40px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #000;
+    }
+
+    .landing-view .product-info-premium {
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .landing-view .product-title-premium {
+      font-weight: 700;
+      margin-bottom: 2px;
+      font-size: 0.98rem;
+      color: var(--ink);
+    }
+
+    .landing-view .product-price-premium {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--accent);
+    }
+
+    .landing-view .product-stock-premium {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .landing-view .product-card-premium .product-image-placeholder {
+      display: none;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: rgba(36, 59, 83, 0.72);
+      background: linear-gradient(135deg, rgba(20, 95, 74, 0.1), rgba(186, 107, 18, 0.08));
+    }
+
     /* WHY CHOOSE US */
     .why-section {
       padding: 80px 40px;
@@ -1870,6 +2110,32 @@
         padding: 0 20px 40px;
       }
 
+      .landing-view .shop-hero {
+        padding: 32px 22px;
+        border-radius: 22px;
+      }
+
+      .landing-view .shop-header {
+        align-items: flex-start;
+      }
+
+      .landing-view .category-pills {
+        gap: 10px;
+      }
+
+      .landing-view .pill {
+        padding: 8px 14px;
+      }
+
+      .landing-view .product-grid-premium {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 18px;
+      }
+
+      .landing-view .product-actions-premium {
+        bottom: 0;
+      }
+
       .kpi-grid {
         grid-template-columns: 1fr;
       }
@@ -2213,31 +2479,43 @@
         </section>
 
         <section class="page active" data-page="shop">
-          <div class="shop-header">
-            <div>
-              <div class="breadcrumbs">Home / Shop / Groceries</div>
-              <h1 class="page-title">Fresh Groceries</h1>
+          <div class="shop-hero">
+            <div class="shop-hero-content">
+              <span class="shop-badge">Fresh Picks</span>
+              <h1>Shop Fresh Groceries</h1>
+              <p>Farm-fresh produce, pantry staples, and daily essentials delivered to your doorstep</p>
             </div>
-            <div class="shop-controls">
-              <div class="filter-bar">
-                <input type="text" placeholder="Search products..." id="searchInput" onkeyup="filterProducts()">
-                <select id="categoryFilter" onchange="filterProducts()">
-                  <option value="">All Categories</option>
-                  <option value="dairy">Dairy</option>
-                  <option value="grains">Grains</option>
-                  <option value="fresh">Fresh Produce</option>
-                </select>
-                <select id="sortBy" onchange="filterProducts()">
-                  <option value="newest">Newest</option>
-                  <option value="price_asc">Price: Low → High</option>
-                  <option value="price_desc">Price: High → Low</option>
-                  <option value="popular">Popular</option>
+          </div>
+
+          <div class="shop-header">
+            <div class="shop-header-left">
+              <h2>All Products</h2>
+              <span class="product-count" id="productCount">0 products</span>
+            </div>
+            <div class="shop-header-right">
+              <div class="sort-dropdown">
+                <select id="sortProducts" onchange="sortProducts()">
+                  <option value="newest">Sort by: Newest</option>
+                  <option value="price_low">Price: Low to High</option>
+                  <option value="price_high">Price: High to Low</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <div class="product-grid" id="shopGrid"></div>
+          <div class="category-pills">
+            <button type="button" class="pill active" data-cat="all" onclick="filterByCategory('all')">All</button>
+            <button type="button" class="pill" data-cat="fresh" onclick="filterByCategory('fresh')">🥬 Fresh Produce</button>
+            <button type="button" class="pill" data-cat="dairy" onclick="filterByCategory('dairy')">🥛 Dairy & Eggs</button>
+            <button type="button" class="pill" data-cat="grains" onclick="filterByCategory('grains')">🌾 Grains & Rice</button>
+            <button type="button" class="pill" data-cat="pantry" onclick="filterByCategory('pantry')">📦 Pantry Staples</button>
+          </div>
+
+          <div class="search-wrapper-enhanced">
+            <input type="text" placeholder="Search products..." id="searchInput" onkeyup="filterProducts()">
+          </div>
+
+          <div class="product-grid-premium" id="shopGrid"></div>
         </section>
 
         <section class="page" data-page="cart">
@@ -2940,6 +3218,107 @@
     admin: '/admin/dashboard'
   };
 
+  let selectedShopCategory = 'all';
+
+  function normalizeShopCategory(value) {
+    const category = String(value || '').trim().toLowerCase();
+    if (!category || category === 'all') return 'all';
+    if (category.includes('fresh')) return 'fresh';
+    if (category.includes('dairy') || category.includes('egg')) return 'dairy';
+    if (category.includes('grain') || category.includes('rice')) return 'grains';
+    if (category.includes('pantry') || category.includes('staple')) return 'pantry';
+    return category;
+  }
+
+  function getShopProductCategory(product) {
+    const normalizedCategory = normalizeShopCategory(product?.category);
+    if (normalizedCategory !== 'all') {
+      return normalizedCategory;
+    }
+
+    const name = String(product?.name || '').toLowerCase();
+    if (/banana|tomato|spinach|vegetable|fruit|apple|carrot|lettuce|pepper/.test(name)) return 'fresh';
+    if (/milk|yogurt|cheese|butter|cream|egg/.test(name)) return 'dairy';
+    if (/rice|flour|maize|corn|cereal|sugar|beans|wheat/.test(name)) return 'grains';
+    if (/oil|salt|soap|detergent|pasta|sauce|spice/.test(name)) return 'pantry';
+    return 'all';
+  }
+
+  function getShopProductBadge(product) {
+    const quantity = Number(product?.quantity || 0);
+    if (quantity <= 0) {
+      return { label: 'Sold Out', className: 'low-stock' };
+    }
+    if (quantity < 10) {
+      return { label: 'Low Stock', className: 'low-stock' };
+    }
+
+    const createdAt = product?.created_at ? new Date(product.created_at) : null;
+    if (createdAt && !Number.isNaN(createdAt.getTime())) {
+      const daysOld = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysOld <= 7) {
+        return { label: 'New', className: 'new' };
+      }
+    }
+
+    return { label: 'Fresh', className: 'new' };
+  }
+
+  function syncShopCategoryPills() {
+    document.querySelectorAll('.category-pills .pill').forEach(button => {
+      const buttonCategory = normalizeShopCategory(button.dataset.cat);
+      button.classList.toggle('active', buttonCategory === selectedShopCategory);
+    });
+  }
+
+  function updateShopProductCount(count) {
+    const counter = document.getElementById('productCount');
+    if (!counter) return;
+    const total = Number(count || 0);
+    counter.textContent = `${total} product${total === 1 ? '' : 's'}`;
+  }
+
+  function getShopFilteredProducts() {
+    const search = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+    const sortBy = String(document.getElementById('sortProducts')?.value || 'newest').toLowerCase();
+    const selectedCategory = normalizeShopCategory(selectedShopCategory || document.getElementById('categoryFilter')?.value || 'all');
+
+    selectedShopCategory = selectedCategory;
+
+    const filtered = products.filter(product => {
+      const name = String(product.name || '').toLowerCase();
+      const category = getShopProductCategory(product);
+      const matchesSearch = !search || name.includes(search);
+      const matchesCategory = selectedCategory === 'all' || category === selectedCategory;
+      const isAvailable = !isExpiredProduct(product) && Number(product.quantity || 0) > 0;
+      return matchesSearch && matchesCategory && isAvailable;
+    });
+
+    if (sortBy === 'price_low') {
+      filtered.sort((a, b) => Number(a.unit_price || 0) - Number(b.unit_price || 0));
+    } else if (sortBy === 'price_high') {
+      filtered.sort((a, b) => Number(b.unit_price || 0) - Number(a.unit_price || 0));
+    } else {
+      filtered.sort((a, b) => {
+        const ta = new Date(a.created_at || a.updated_at || 0).getTime();
+        const tb = new Date(b.created_at || b.updated_at || 0).getTime();
+        return tb - ta;
+      });
+    }
+
+    return filtered;
+  }
+
+  function filterByCategory(category) {
+    selectedShopCategory = normalizeShopCategory(category);
+    syncShopCategoryPills();
+    filterProducts();
+  }
+
+  function sortProducts() {
+    filterProducts();
+  }
+
   function initSeamlessCarousel() {
     const track = document.querySelector('.brand-track');
     if (!track || track.dataset.carouselReady === 'true') return;
@@ -3459,6 +3838,8 @@
     if (filterSelect) {
       filterSelect.value = String(category || '');
     }
+    selectedShopCategory = normalizeShopCategory(category);
+    syncShopCategoryPills();
     showPage('shop');
     filterProducts();
   }
@@ -3548,19 +3929,19 @@
 
   function renderProductCards(items) {
     return items.map(p => `
-      <div class="product-card" onclick="showProductDetail(${p.id})">
-        <div class="product-image">
+      <div class="product-card-premium" onclick="showProductDetail(${p.id})">
+        <div class="product-image-premium">
           <img src="${getProductImageUrl(p)}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="product-image-placeholder" style="display:none;">📦</div>
-        </div>
-        <div class="product-info">
-          <div class="product-name">${p.name}</div>
-          <div class="product-price">${formatKes(p.unit_price)}</div>
-          <div class="product-stock">Stock: ${p.quantity}</div>
-          <div class="product-actions">
-            <button class="button button-small" onclick='addToCart(event, ${p.id}, ${JSON.stringify(p.name)}, ${p.unit_price})'>Add to Cart</button>
-            <button class="button-ghost button-small" onclick="showProductDetail(${p.id})">View Details</button>
+          <div class="product-image-placeholder">📦</div>
+          <div class="product-badge-premium ${getShopProductBadge(p).className}">${getShopProductBadge(p).label}</div>
+          <div class="product-actions-premium">
+            <button type="button" onclick='addToCart(event, ${p.id}, ${JSON.stringify(p.name)}, ${p.unit_price})'>Add to Cart</button>
           </div>
+        </div>
+        <div class="product-info-premium">
+          <div class="product-title-premium">${p.name}</div>
+          <div class="product-price-premium">${formatKes(p.unit_price)}</div>
+          <div class="product-stock-premium">Stock: ${Number(p.quantity || 0)} available</div>
         </div>
       </div>
     `).join('');
@@ -3569,13 +3950,7 @@
   function renderShopGrid() {
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
-    
-    if (products.length === 0) {
-      grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--muted);">No products available.</p>';
-      return;
-    }
-    
-    grid.innerHTML = renderProductCards(products);
+    filterProducts();
   }
 
   function isExpiredProduct(product) {
@@ -3684,20 +4059,12 @@
   }
 
   function filterProducts() {
-    const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
-    const selectedCategory = (document.getElementById('categoryFilter')?.value || '').toLowerCase();
-    const sortBy = (document.getElementById('sortBy')?.value || '').toLowerCase();
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
 
-    const filtered = products.filter(p => {
-      const name = String(p.name || '').toLowerCase();
-      const category = String(p.category || '').toLowerCase();
-      const matchesSearch = !search || name.includes(search);
-      const matchesCategory = !selectedCategory || category === selectedCategory;
-      const isAvailable = !isExpiredProduct(p) && p.quantity > 0;
-      return matchesSearch && matchesCategory && isAvailable;
-    });
+    const filtered = getShopFilteredProducts();
+    updateShopProductCount(filtered.length);
+    syncShopCategoryPills();
 
     if (products.length === 0) {
       grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--muted);">No products available.</p>';
@@ -3707,19 +4074,6 @@
     if (filtered.length === 0) {
       grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--muted);">No products match your search.</p>';
       return;
-    }
-
-    // Sorting
-    if (sortBy === 'price_asc') {
-      filtered.sort((a, b) => Number(a.unit_price || 0) - Number(b.unit_price || 0));
-    } else if (sortBy === 'price_desc') {
-      filtered.sort((a, b) => Number(b.unit_price || 0) - Number(a.unit_price || 0));
-    } else if (sortBy === 'newest') {
-      filtered.sort((a, b) => {
-        const ta = new Date(a.created_at || a.updated_at || 0).getTime();
-        const tb = new Date(b.created_at || b.updated_at || 0).getTime();
-        return tb - ta;
-      });
     }
 
     grid.innerHTML = renderProductCards(filtered);
