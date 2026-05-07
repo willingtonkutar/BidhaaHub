@@ -334,7 +334,8 @@
       gap: 25px;
       overflow: hidden;
       animation: scrollBrands 25s linear infinite;
-      width: 100%;
+      width: max-content;
+      will-change: transform;
     }
 
     .brand-track img {
@@ -349,7 +350,7 @@
 
     @keyframes scrollBrands {
       0% { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
+      100% { transform: translateX(-50%); }
     }
 
     .meet-section {
@@ -680,6 +681,13 @@
 
     .footer-links a:hover {
       color: white;
+    }
+
+    .footer-links .footer-link-btn {
+      display: block;
+      width: 100%;
+      margin-bottom: 8px;
+      text-align: left;
     }
 
     .footer-bottom {
@@ -1652,8 +1660,7 @@
         <p>All-in-one platform for grocery stores to manage stock, process orders, and track deliveries in real-time.</p>
 
         <div class="hero-buttons">
-          <button class="btn-primary" onclick="landingShowAuth('customer')">Shop Now</button>
-          <button class="btn-secondary" onclick="landingShowAuth('admin')">Manage Store</button>
+          <button type="button" class="btn-primary" onclick="landingNavigate('shop')">Shop Now</button>
         </div>
       </div>
     </section>
@@ -2345,9 +2352,9 @@
     </div>
     <div class="footer-links">
       <h4>Explore</h4>
-      <a href="#">Shop</a>
-      <a href="#">Manage Store</a>
-      <a href="#">Login</a>
+      <button type="button" class="footer-link-btn" onclick="landingNavigate('shop')">Shop</button>
+      <button type="button" class="footer-link-btn" onclick="landingNavigate('manage-store')">Manage Store</button>
+      <button type="button" class="footer-link-btn" onclick="landingNavigate('login')">Login</button>
     </div>
     <div class="footer-links">
       <h4>Company</h4>
@@ -2608,6 +2615,40 @@
   // ===== LANDING PAGE FUNCTIONS =====
   function landingShowAuth(role) {
     goToLogin(role);
+  }
+
+  function landingNavigate(target) {
+    const routeMap = {
+      shop: { role: 'customer', hash: '/shop' },
+      'manage-store': { role: 'admin', hash: '/dashboard' },
+      login: { role: 'customer', hash: '/customer' }
+    };
+
+    const targetConfig = routeMap[target];
+    if (!targetConfig) return;
+
+    if (currentUser) {
+      if (target === 'shop' && currentUser.role === 'customer') {
+        showWorkspace();
+        showPage('shop');
+        return;
+      }
+
+      if (target === 'manage-store' && currentUser.role !== 'customer') {
+        showWorkspace();
+        showPage('home');
+        return;
+      }
+
+      if (target === 'login' && currentUser.role === 'customer') {
+        showWorkspace();
+        showPage('customer-home');
+        return;
+      }
+    }
+
+    window.location.hash = targetConfig.hash;
+    goToLogin(targetConfig.role);
   }
 
   function goToLogin(role) {
