@@ -414,8 +414,11 @@
 
     .landing-view .product-grid-premium {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(180px, 220px));
+      justify-content: center;
       gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     .landing-view .product-card-premium {
@@ -426,6 +429,8 @@
       border: 1px solid var(--line);
       cursor: pointer;
       box-shadow: 0 8px 26px rgba(15, 23, 42, 0.04);
+      max-width: 240px;
+      margin: 0 auto;
     }
 
     .landing-view .product-card-premium:hover {
@@ -438,14 +443,20 @@
       aspect-ratio: 1 / 1;
       overflow: hidden;
       background: rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .landing-view .product-image-premium img {
       width: 100%;
       height: 100%;
+      max-width: 200px;
+      max-height: 200px;
       object-fit: cover;
       transition: transform 0.3s ease;
       display: block;
+      margin: 0 auto;
     }
 
     .landing-view .product-card-premium:hover .product-image-premium img {
@@ -4626,8 +4637,9 @@
   }
 
   async function loadSupplierOptions() {
-    const select = document.getElementById('productSupplierSelect');
-    if (!select) return;
+    const addSelect = document.getElementById('productSupplierSelect');
+    const editSelect = document.getElementById('editProductSupplierSelect');
+    if (!addSelect && !editSelect) return;
 
     try {
       const response = await fetch(`${API_URL}/suppliers`, {
@@ -4637,23 +4649,33 @@
       supplierDirectory = Array.isArray(suppliers) ? suppliers : [];
       const list = supplierDirectory;
 
-      select.innerHTML = '<option value="">Select supplier...</option>';
+      const populateSelect = (select, placeholder, selectedValue) => {
+        if (!select) return;
+        select.innerHTML = `<option value="">${placeholder}</option>`;
 
-      if (list.length === 0) {
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.textContent = 'No suppliers saved yet';
-        emptyOption.disabled = true;
-        select.appendChild(emptyOption);
-        return;
-      }
+        if (list.length === 0) {
+          const emptyOption = document.createElement('option');
+          emptyOption.value = '';
+          emptyOption.textContent = 'No suppliers saved yet';
+          emptyOption.disabled = true;
+          select.appendChild(emptyOption);
+          return;
+        }
 
-      list.forEach(supplier => {
-        const option = document.createElement('option');
-        option.value = supplier.id;
-        option.textContent = supplier.name;
-        select.appendChild(option);
-      });
+        list.forEach(supplier => {
+          const option = document.createElement('option');
+          option.value = supplier.id;
+          option.textContent = supplier.name;
+          select.appendChild(option);
+        });
+
+        if (selectedValue !== undefined && selectedValue !== null && String(selectedValue).trim() !== '') {
+          select.value = String(selectedValue);
+        }
+      };
+
+      populateSelect(addSelect, 'Select supplier...', addSelect?.value || '');
+      populateSelect(editSelect, 'Select supplier...', editSelect?.value || '');
     } catch (err) {
       console.error('Error loading supplier options:', err);
     }
@@ -4774,7 +4796,6 @@
 
     document.getElementById('editProductName').value = product.name;
     document.getElementById('editProductCategory').value = product.category || '';
-    document.getElementById('editProductSupplierSelect').value = product.supplier_id || '';
     document.getElementById('editProductUnitPrice').value = product.unit_price;
     document.getElementById('editProductQuantity').value = product.quantity;
     document.getElementById('editProductMinThreshold').value = product.min_threshold;
@@ -4785,6 +4806,7 @@
     document.getElementById('editProductForm').dataset.productId = productId;
     setFormFeedback('editProductFormFeedback');
     await loadSupplierOptions();
+    document.getElementById('editProductSupplierSelect').value = product.supplier_id || '';
     refreshCategoryControls();
     document.getElementById('editProductModal').classList.add('active');
   }
@@ -4807,7 +4829,7 @@
       unit_price: Number(formData.get('unit_price') || 0),
       min_threshold: Number(formData.get('min_threshold') || 0),
       expiry_date: String(formData.get('expiry_date') || '').trim() || null,
-      supplier_id: formData.get('supplier_id') ? Number(formData.get('supplier_id')) : null
+      supplier_id: formData.get('supplier_id') ? Number(formData.get('supplier_id')) : Number(adminProducts.find(item => item.id === productId)?.supplier_id || 0) || null
     };
 
     try {
