@@ -3157,7 +3157,7 @@
           </div>
           <div class="form-group">
             <label>Supplier</label>
-            <select id="editProductSupplierSelect" name="supplier_id" required>
+            <select id="editProductSupplierSelect" name="supplier_id">
               <option value="">Select supplier...</option>
             </select>
           </div>
@@ -4829,7 +4829,7 @@
       unit_price: Number(formData.get('unit_price') || 0),
       min_threshold: Number(formData.get('min_threshold') || 0),
       expiry_date: String(formData.get('expiry_date') || '').trim() || null,
-      supplier_id: formData.get('supplier_id') ? Number(formData.get('supplier_id')) : Number(adminProducts.find(item => item.id === productId)?.supplier_id || 0) || null
+      supplier_id: formData.get('supplier_id') ? Number(formData.get('supplier_id')) : null
     };
 
     try {
