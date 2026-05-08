@@ -2222,6 +2222,76 @@
 
     /* ===== VISIBILITY HELPERS ===== */
     .hidden { display: none !important; }
+    
+    /* FORCE WORKSPACE PRODUCT GRID TO MATCH LANDING PAGE STYLE */
+    .workspace #shopGrid,
+    body.customer-mode #shopGrid,
+    .workspace .product-grid-premium {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 20px !important;
+    }
+
+    /* Make product cards consistent in workspace */
+    .workspace .product-card-premium,
+    #workspace .product-card-premium {
+      background: var(--panel);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.25s ease;
+      border: 1px solid var(--line);
+    }
+
+    .workspace .product-image-premium {
+      height: 190px;
+      overflow: hidden;
+    }
+
+    .workspace .product-image-premium img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .workspace .product-info-premium {
+      padding: 10px 12px;
+    }
+
+    .workspace .product-title-premium {
+      font-weight: 600;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .workspace .product-price-premium {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+
+    /* Responsive for workspace */
+    @media (max-width: 1100px) {
+      .workspace #shopGrid,
+      body.customer-mode #shopGrid {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .workspace #shopGrid,
+      body.customer-mode #shopGrid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .workspace #shopGrid,
+      body.customer-mode #shopGrid {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 <body class="theme-dark">
@@ -3938,11 +4008,19 @@
   }
 
   function renderProductCards(items) {
-    return items.map(p => `
+    const grid = document.getElementById('shopGrid');
+    if (!grid) return '';
+
+    if (!items || items.length === 0) {
+      grid.innerHTML = '<div class="empty-state">No products found</div>';
+      return '';
+    }
+
+    const html = items.map(p => `
       <div class="product-card-premium" onclick="showProductDetail(${p.id})">
         <div class="product-image-premium">
-          <img src="${getProductImageUrl(p)}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';">
-          <div class="product-badge-premium ${getShopProductBadge(p).className}">${getShopProductBadge(p).label}</div>
+          <img src="${getProductImageUrl(p)}" alt="${p.name}" loading="lazy" onerror="this.src='assets/images/placeholder.png';">
+          ${Number(p.quantity || 0) < 5 ? `<div class="product-badge-premium low-stock">Low Stock</div>` : ''}
           <div class="product-actions-premium">
             <button type="button" onclick='addToCart(event, ${p.id}, ${JSON.stringify(p.name)}, ${p.unit_price})'>Add to Cart</button>
           </div>
@@ -3950,10 +4028,16 @@
         <div class="product-info-premium">
           <div class="product-title-premium">${p.name}</div>
           <div class="product-price-premium">${formatKes(p.unit_price)}</div>
-          <div class="product-stock-premium">Stock: ${Number(p.quantity || 0)} available</div>
+          <div class="product-stock-premium">Stock: ${Number(p.quantity || 0)}</div>
         </div>
       </div>
     `).join('');
+
+    // set grid HTML and update product count
+    grid.innerHTML = html;
+    const countEl = document.getElementById('productCount');
+    if (countEl) countEl.textContent = `${items.length} products`;
+    return html;
   }
 
   function renderShopGrid() {
@@ -4147,7 +4231,7 @@
           : '<button class="button-ghost button-small" disabled>Recorded</button>')
         : expiringSoon
           ? '<button class="button-secondary button-small" disabled>Clearance Recommended</button>'
-          : `<button class="button-ghost button-small" onclick="showEditProductModal(${product.id})">Edit</button>${Number(product.quantity || 0) <= 0 ? ` <button class="button-secondary button-small" onclick="showRestockModal(${product.id})">Restock</button>` : ''}`;
+          : `<button class="button-ghost button-small" onclick="showEditProductModal(${product.id})">Edit</button>${Number(product.quantity || 0) <= 0 ? ` <button class="button-secondary button-small" onclick="showRestockModal(${product.id})">Restock</button>` : ''} <button class="button-ghost button-small" onclick="confirmDeleteProduct(${product.id})">Delete</button>`;
 
       return `
         <tr>
@@ -5109,6 +5193,24 @@
       setTimeout(() => closeModal('supplierModal'), 250);
     } catch (err) {
       setFormFeedback('supplierFormFeedback', `Error: ${err.message}`, 'error');
+    }
+  }
+
+  async function confirmDeleteProduct(productId) {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+    try {
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || 'Unable to delete product');
+      }
+      showToast('Product deleted.', 'success');
+      await loadAdminProducts();
+    } catch (err) {
+      showToast(err.message, 'error');
     }
   }
 

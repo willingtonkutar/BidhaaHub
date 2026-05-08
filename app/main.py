@@ -859,6 +859,17 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
     return product
 
 
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int, db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> dict[str, str]:
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    db.delete(product)
+    db.commit()
+    return {"status": "ok"}
+
+
 @app.post("/transactions", response_model=TransactionRead)
 def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> Transaction:
     product = db.get(Product, payload.product_id)
