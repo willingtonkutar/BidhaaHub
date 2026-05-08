@@ -2433,6 +2433,263 @@
             opacity: 0.95;
         }
     }
+
+    /* ===== MODERN CHECKOUT PAGE ===== */
+    .checkout-container {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    .checkout-left {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .checkout-progress {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .progress-step {
+      flex: 1 1 120px;
+      text-align: center;
+      padding: 12px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 30px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .progress-step.active {
+      background: var(--accent);
+      color: white;
+      border-color: transparent;
+    }
+
+    .checkout-section {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .checkout-section h3 {
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .delivery-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .delivery-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .delivery-option:hover {
+      border-color: var(--accent);
+      background: rgba(74, 222, 128, 0.05);
+    }
+
+    .delivery-option input {
+      margin-right: 14px;
+      accent-color: var(--accent);
+    }
+
+    .delivery-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .delivery-info strong {
+      font-size: 0.95rem;
+    }
+
+    .delivery-info span {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .delivery-price {
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .checkout-right {
+      min-width: 0;
+    }
+
+    .order-summary-card {
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      position: sticky;
+      top: 100px;
+      box-shadow: var(--shadow);
+    }
+
+    .order-summary-card h3 {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .order-items {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .order-item-name {
+      font-size: 0.9rem;
+    }
+
+    .order-item-name small {
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    .order-item-price {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      font-size: 0.95rem;
+    }
+
+    .summary-row.total {
+      border-top: 2px solid var(--line);
+      margin-top: 8px;
+      padding-top: 16px;
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .payment-section {
+      margin: 20px 0;
+    }
+
+    .payment-section h4 {
+      margin-bottom: 14px;
+      font-size: 1rem;
+    }
+
+    .payment-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .payment-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .payment-option:hover {
+      border-color: var(--accent);
+    }
+
+    .payment-option input {
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .payment-icon {
+      font-size: 1.3rem;
+    }
+
+    .place-order-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 16px;
+    }
+
+    .place-order-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+
+    .secure-notice {
+      text-align: center;
+      font-size: 0.75rem;
+      margin-top: 16px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .checkout-container {
+        grid-template-columns: 1fr;
+      }
+
+      .order-summary-card {
+        position: static;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-options {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body class="theme-dark">
@@ -2746,60 +3003,139 @@
         </section>
 
         <section class="page" data-page="checkout">
-          <h2>💳 Checkout</h2>
-          <p>Complete your purchase.</p>
-          <form id="checkoutForm" onsubmit="submitCheckout(event)">
-            <div style="display: grid; gap: 20px;">
-              <div>
-                <h3>Delivery Details</h3>
-                <div class="form-group">
-                  <label>Full Name</label>
-                  <input id="checkoutName" type="text" required />
-                </div>
-                <div class="form-group">
-                  <label>Phone Number</label>
-                  <input id="checkoutPhone" type="tel" required />
-                </div>
-                <div class="form-group">
-                  <label>Email</label>
-                  <input id="checkoutEmail" type="email" required />
-                </div>
-                <div class="form-group">
-                  <label>Delivery Address</label>
-                  <textarea id="checkoutAddress" rows="3" required></textarea>
-                </div>
+          <div class="checkout-container">
+            <div class="checkout-left">
+              <div class="checkout-progress">
+                <div class="progress-step active">1. Cart</div>
+                <div class="progress-step active">2. Information</div>
+                <div class="progress-step">3. Payment</div>
+                <div class="progress-step">4. Complete</div>
               </div>
 
-              <div>
-                <h3>Delivery Method</h3>
-                <div class="form-group">
-                  <select id="deliveryMethod" required>
-                    <option value="">Select delivery method...</option>
-                    <option value="pickup">Pickup (Free)</option>
-                    <option value="courier">Courier (150 KES)</option>
-                    <option value="rider">Rider (300 KES)</option>
-                  </select>
+              <form id="checkoutForm" onsubmit="submitCheckout(event)">
+                <div class="checkout-section">
+                  <h3>Contact Information</h3>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Email Address</label>
+                      <input type="email" id="checkoutEmail" placeholder="your@email.com" value="" />
+                    </div>
+                    <div class="form-group">
+                      <label>Phone Number</label>
+                      <input type="tel" id="checkoutPhone" placeholder="0712345678" />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <h3>Payment Method</h3>
-                <div class="form-group">
-                  <select id="paymentMethod" required>
-                    <option value="">Select payment method...</option>
-                    <option value="cash_on_delivery">Cash on Delivery</option>
-                    <option value="mpesa_daraja">M-Pesa (STK Push)</option>
-                    <option value="paypal">PayPal</option>
-                    <option value="mock_card">Card (Test)</option>
-                  </select>
+                <div class="checkout-section">
+                  <h3>Delivery Address</h3>
+                  <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="checkoutName" placeholder="John Doe" />
+                  </div>
+                  <div class="form-group">
+                    <label>Street Address</label>
+                    <textarea id="checkoutAddress" rows="2" placeholder="Building, Street, Area"></textarea>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>City</label>
+                      <input type="text" id="checkoutCity" placeholder="Nairobi" />
+                    </div>
+                    <div class="form-group">
+                      <label>Postal Code (Optional)</label>
+                      <input type="text" id="checkoutPostal" placeholder="00100" />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div id="orderSummary"></div>
-
-              <button type="submit" class="button" style="width: 100%; min-height: 48px;">Place Order</button>
+                <div class="checkout-section">
+                  <h3>Delivery Method</h3>
+                  <div class="delivery-options" id="deliveryOptionsContainer">
+                    <label class="delivery-option">
+                      <input type="radio" name="delivery_method" value="pickup" checked>
+                      <div class="delivery-info">
+                        <strong>📦 Pickup</strong>
+                        <span>Free - Collect from our store</span>
+                      </div>
+                      <span class="delivery-price">FREE</span>
+                    </label>
+                    <label class="delivery-option">
+                      <input type="radio" name="delivery_method" value="standard">
+                      <div class="delivery-info">
+                        <strong>🚚 Standard Delivery</strong>
+                        <span>2-4 business days</span>
+                      </div>
+                      <span class="delivery-price">150 KES</span>
+                    </label>
+                    <label class="delivery-option">
+                      <input type="radio" name="delivery_method" value="express">
+                      <div class="delivery-info">
+                        <strong>⚡ Express Delivery</strong>
+                        <span>Same day delivery (order before 2PM)</span>
+                      </div>
+                      <span class="delivery-price">300 KES</span>
+                    </label>
+                  </div>
+                </div>
+              </form>
             </div>
-          </form>
+
+            <div class="checkout-right">
+              <div class="order-summary-card">
+                <h3>Order Summary</h3>
+
+                <div id="checkoutItemsList" class="order-items"></div>
+
+                <div class="summary-row">
+                  <span>Subtotal</span>
+                  <span id="checkoutSubtotal">0 KES</span>
+                </div>
+                <div class="summary-row">
+                  <span>Delivery Fee</span>
+                  <span id="checkoutDeliveryFee">0 KES</span>
+                </div>
+                <div class="summary-row total">
+                  <span>Total</span>
+                  <span id="checkoutTotal">0 KES</span>
+                </div>
+
+                <div class="payment-section">
+                  <h4>Payment Method</h4>
+                  <div class="payment-options">
+                    <label class="payment-option">
+                      <input type="radio" name="payment_method" value="cash_on_delivery">
+                      <div class="payment-icon">💵</div>
+                      <span>Cash on Delivery</span>
+                    </label>
+                    <label class="payment-option">
+                      <input type="radio" name="payment_method" value="mpesa_daraja">
+                      <div class="payment-icon">📱</div>
+                      <span>M-Pesa</span>
+                    </label>
+                    <label class="payment-option">
+                      <input type="radio" name="payment_method" value="mock_card">
+                      <div class="payment-icon">💳</div>
+                      <span>Card (Test)</span>
+                    </label>
+                    <label class="payment-option">
+                      <input type="radio" name="payment_method" value="paypal">
+                      <div class="payment-icon">🅿️</div>
+                      <span>PayPal</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button class="place-order-btn" onclick="submitCheckout(event)">
+                  Place Order
+                </button>
+
+                <p class="secure-notice">
+                  🔒 Your payment information is processed securely
+                </p>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="page" data-page="my-orders">
@@ -4498,8 +4834,7 @@
 
   // ===== CHECKOUT FUNCTIONS =====
   async function loadCustomerDeliveryOptions() {
-    const select = document.getElementById('deliveryMethod');
-    if (!select || !currentToken) return;
+    if (!currentToken) return;
 
     try {
       const response = await fetch(`${API_URL}/delivery-options`, {
@@ -4512,76 +4847,119 @@
 
       const options = await response.json();
       checkoutDeliveryOptions = Array.isArray(options) ? options : [];
-      if (checkoutDeliveryOptions.length === 0) {
-        return;
-      }
-
-      select.innerHTML = '<option value="">Select delivery method...</option>';
-      checkoutDeliveryOptions.forEach(option => {
-        const fee = Number(option.base_fee || 0);
-        const optionElement = document.createElement('option');
-        optionElement.value = option.code;
-        optionElement.textContent = `${option.name} (${fee} KES)`;
-        select.appendChild(optionElement);
-      });
-
-      if (!select.value && checkoutDeliveryOptions.some(option => option.code === 'pickup')) {
-        select.value = 'pickup';
-      }
       renderCheckout();
     } catch (err) {
       console.error('Error loading customer delivery options:', err);
     }
   }
 
-  function renderCheckout() {
-    syncCartState();
-    const summary = document.getElementById('orderSummary');
-    if (!summary) return;
-
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const selectedDeliveryCode = document.getElementById('deliveryMethod')?.value || '';
+  function getCheckoutDeliveryFee(selectedDeliveryCode) {
     const selectedDelivery = checkoutDeliveryOptions.find(option => option.code === selectedDeliveryCode);
-    const deliveryFee = Number(selectedDelivery?.base_fee || 0);
+    if (selectedDelivery) {
+      return Number(selectedDelivery.base_fee || 0);
+    }
+
+    if (selectedDeliveryCode === 'standard') return 150;
+    if (selectedDeliveryCode === 'express') return 300;
+    return 0;
+  }
+
+  function updateCheckoutSummary() {
+    syncCartState();
+
+    const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price || item.unit_price || 0) * Number(item.quantity || 0)), 0);
+    const selectedDeliveryCode = document.querySelector('input[name="delivery_method"]:checked')?.value || 'pickup';
+    const deliveryFee = getCheckoutDeliveryFee(selectedDeliveryCode);
     const total = subtotal + deliveryFee;
 
-    summary.innerHTML = `
-      <div style="padding: 16px; background: linear-gradient(135deg, rgba(20, 95, 74, 0.06), rgba(186, 107, 18, 0.03)); border-radius: 12px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-          <span>Subtotal:</span>
-          <strong>${subtotal} KES</strong>
+    const subtotalEl = document.getElementById('checkoutSubtotal');
+    const deliveryFeeEl = document.getElementById('checkoutDeliveryFee');
+    const totalEl = document.getElementById('checkoutTotal');
+    const itemsContainer = document.getElementById('checkoutItemsList');
+
+    if (subtotalEl) subtotalEl.textContent = `${subtotal} KES`;
+    if (deliveryFeeEl) deliveryFeeEl.textContent = `${deliveryFee} KES`;
+    if (totalEl) totalEl.textContent = `${total} KES`;
+
+    if (!itemsContainer) return;
+
+    if (cartItems.length === 0) {
+      itemsContainer.innerHTML = '<div class="empty-state">Your cart is empty.</div>';
+      return;
+    }
+
+    itemsContainer.innerHTML = cartItems.map(item => `
+      <div class="order-item">
+        <div class="order-item-name">
+          ${item.name} <small>x${item.quantity}</small>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line);">
-          <span>Delivery:</span>
-          <strong>${deliveryFee} KES</strong>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 1.2rem;">
-          <span>Total:</span>
-          <strong style="color: var(--accent);">${total} KES</strong>
-        </div>
+        <div class="order-item-price">${Number(item.price || item.unit_price || 0) * Number(item.quantity || 0)} KES</div>
       </div>
-    `;
+    `).join('');
+  }
+
+  function renderCheckout() {
+    syncCartState();
+    const nameInput = document.getElementById('checkoutName');
+    const emailInput = document.getElementById('checkoutEmail');
+    const phoneInput = document.getElementById('checkoutPhone');
+
+    if (currentUser) {
+      if (nameInput && !nameInput.value) nameInput.value = currentUser.full_name || '';
+      if (emailInput && !emailInput.value) emailInput.value = currentUser.email || '';
+      if (phoneInput && !phoneInput.value && currentUser.phone) phoneInput.value = currentUser.phone;
+    }
+
+    if (!document.querySelector('input[name="delivery_method"]:checked')) {
+      const defaultDelivery = document.querySelector('input[name="delivery_method"][value="pickup"]');
+      if (defaultDelivery) defaultDelivery.checked = true;
+    }
+
+    updateCheckoutSummary();
   }
 
   async function submitCheckout(e) {
     e.preventDefault();
+
     if (cartItems.length === 0) {
-      alert('Cart is empty!');
+      alert('Your cart is empty!');
+      return;
+    }
+
+    const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
+    if (!deliveryMethod) {
+      alert('Please select a delivery method');
+      return;
+    }
+
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    if (!paymentMethod) {
+      alert('Please select a payment method');
       return;
     }
 
     const payload = {
-      customer_name: document.getElementById('checkoutName').value,
-      customer_phone: document.getElementById('checkoutPhone').value || null,
-      customer_email: document.getElementById('checkoutEmail').value || null,
-      delivery_address: document.getElementById('checkoutAddress').value || null,
-      payment_method: document.getElementById('paymentMethod').value,
-      delivery_method: document.getElementById('deliveryMethod').value,
+      customer_name: document.getElementById('checkoutName')?.value || currentUser?.full_name || '',
+      customer_phone: document.getElementById('checkoutPhone')?.value || '',
+      customer_email: document.getElementById('checkoutEmail')?.value || currentUser?.email || '',
+      delivery_address: document.getElementById('checkoutAddress')?.value || '',
+      payment_method: paymentMethod.value,
+      delivery_method: deliveryMethod.value,
       items: cartItems.map(item => ({
         product_id: item.id,
         quantity: item.quantity
       }))
     };
+
+    if (!payload.customer_name || !payload.delivery_address) {
+      alert('Please fill in your name and delivery address');
+      return;
+    }
+
+    if (payload.payment_method === 'mpesa_daraja' && !payload.customer_phone) {
+      alert('Phone number is required for M-Pesa payment');
+      return;
+    }
 
     if (!currentToken) {
       alert('Please login again before checking out.');
@@ -4600,16 +4978,24 @@
 
       const data = await response.json();
       if (response.ok) {
-        alert('Order placed successfully! Order ID: ' + data.id);
         cartItems = [];
         localStorage.removeItem('cart');
         renderCart();
         renderCheckout();
+
+        if (payload.payment_method === 'mpesa_daraja') {
+          alert(`Please check your phone (${payload.customer_phone}) to complete M-Pesa payment.\nOrder ID: ${data.id}`);
+        } else {
+          alert(`Order placed successfully! Order ID: ${data.id}`);
+        }
+
         showPage('my-orders');
+        if (typeof loadMyOrders === 'function') loadMyOrders();
       } else {
-        alert('Checkout failed: ' + getApiErrorMessage(data, 'Unknown error'));
+        alert('Checkout failed: ' + (data.detail || 'Unknown error'));
       }
     } catch (err) {
+      console.error('Checkout error:', err);
       alert('Error: ' + err.message);
     }
   }
@@ -5452,19 +5838,17 @@
       applyRouteForUnauthenticatedUser();
     }
 
-    // Populate checkout with user data if authenticated
-    if (currentUser) {
-      const nameInput = document.getElementById('checkoutName');
-      const emailInput = document.getElementById('checkoutEmail');
-      if (nameInput) nameInput.value = currentUser.full_name || '';
-      if (emailInput) emailInput.value = currentUser.email || '';
-    }
+    // Setup checkout summary listeners
+    document.querySelectorAll('input[name="delivery_method"], input[name="payment_method"]').forEach(input => {
+      input.addEventListener('change', updateCheckoutSummary);
+    });
 
-    // Setup checkout summary on delivery/payment change
-    const deliveryMethod = document.getElementById('deliveryMethod');
-    if (deliveryMethod) {
-      deliveryMethod.addEventListener('change', renderCheckout);
-    }
+    ['checkoutName', 'checkoutPhone', 'checkoutEmail', 'checkoutAddress'].forEach(id => {
+      const field = document.getElementById(id);
+      if (field) {
+        field.addEventListener('input', updateCheckoutSummary);
+      }
+    });
 
     initSeamlessCarousel();
 
