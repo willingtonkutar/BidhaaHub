@@ -141,6 +141,41 @@ DARAJA_CONFIG = {
 }
 
 
+def get_current_user(authorization: str | None = Header(default=None, alias="Authorization"), db: Session = Depends(get_db)) -> User:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization token is required")
+
+    token = authorization.strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization token is required")
+
+    try:
+        payload = decode_access_token(token)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    user = db.get(User, int(user_id))
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+
+def require_roles(*allowed_roles: str):
+    def dependency(user: User = Depends(get_current_user)) -> User:
+        if user.role not in set(allowed_roles):
+            raise HTTPException(status_code=403, detail="You do not have permission to access this resource")
+        return user
+
+    return dependency
+
+
 def seed_default_data() -> None:
     db = SessionLocal()
     try:
@@ -429,7 +464,6 @@ def finalize_checkout_session(
         payment_method=checkout_session.payment_method,
         order_status="paid",
         payment_status="paid",
-        delivery_fee=checkout_session.delivery_fee,
         subtotal=checkout_session.subtotal,
         total_amount=checkout_session.total_amount,
         line_items=line_items,
@@ -437,73 +471,12 @@ def finalize_checkout_session(
         payment_method_label=payment_method_label,
         provider_reference=provider_reference,
     )
+
     checkout_session.order_id = order.id
-    checkout_session.status = "completed"
     checkout_session.provider_reference = provider_reference
+    checkout_session.status = "paid"
     db.add(checkout_session)
     return order
-
-
-seed_default_data()
-
-
-def get_token_payload(authorization: str = Header(default="")) -> dict[str, object]:
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    token = authorization.split(" ", 1)[1].strip()
-    if not token:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    try:
-        return decode_access_token(token)
-    except ValueError as error:
-        raise HTTPException(status_code=401, detail=str(error)) from error
-
-
-def get_current_user(db: Session = Depends(get_db), payload: dict[str, object] = Depends(get_token_payload)) -> User:
-    user_id = int(payload.get("sub", 0))
-    user = db.get(User, user_id)
-    if user is None or not user.is_active:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
-
-
-def require_roles(*roles: str):
-    def dependency(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
-            raise HTTPException(status_code=403, detail="Access denied")
-        return user
-
-    return dependency
-
-
-def user_to_read(user: User) -> UserRead:
-    return UserRead.model_validate(user)
-
-
-def delivery_fee_for_option(option: DeliveryOption, delivery_address: str | None) -> float:
-    if option.code == "pickup":
-        return 0.0
-
-    address_text = (delivery_address or "").lower()
-    fee = float(option.base_fee)
-    if option.code == "express":
-        fee += 150.0
-    if address_text and not any(city in address_text for city in ["nairobi", "mombasa", "kisumu"]):
-        fee += 50.0
-    return round(fee, 2)
-
-
-def order_total_amount(subtotal: float, delivery_fee: float) -> float:
-    return round(subtotal + delivery_fee, 2)
-
-
-def daraja_credentials_configured() -> bool:
-    return all(
-        DARAJA_CONFIG[key]
-        for key in ("consumer_key", "consumer_secret", "shortcode", "passkey", "callback_url", "base_url")
-    )
 
 
 def normalize_ke_phone_number(phone_number: str | None) -> str:
@@ -724,10 +697,7 @@ def read_current_user(user: User = Depends(get_current_user)) -> UserRead:
 def payment_methods() -> list[dict[str, str]]:
     return [
         {"code": "cash_on_delivery", "name": "Cash on Delivery", "provider": "cash_on_delivery"},
-        {"code": "mpesa_daraja", "name": "M-Pesa Daraja", "provider": "mpesa_daraja"},
         {"code": "intasend_mpesa", "name": "IntaSend M-Pesa", "provider": "intasend_mpesa"},
-        {"code": "paypal", "name": "PayPal", "provider": "paypal"},
-        {"code": "mock_card", "name": "Card (mock)", "provider": "mock_card"},
     ]
 
 
@@ -834,10 +804,7 @@ def initiate_payment(
         raise HTTPException(status_code=403, detail="You cannot pay for this order")
 
     provider_map = {
-        "mpesa_daraja": "M-Pesa Daraja",
         "intasend_mpesa": "IntaSend M-Pesa",
-        "paypal": "PayPal",
-        "mock_card": "Card",
         "cash_on_delivery": "Cash on Delivery",
     }
     provider_name = provider_map[payload.provider]
@@ -864,27 +831,6 @@ def initiate_payment(
 
     order.payment_method = payload.provider
     order.payment_status = "pending"
-    if payload.provider == "mpesa_daraja":
-        # prefer phone from payload, then order
-        phone_number = payload.phone_number or order.customer_phone
-
-        # If Daraja passkey is not configured, complete payment immediately (mock mode)
-        if not daraja_credentials_configured():
-            payment.checkout_request_id = None
-            payment.merchant_request_id = None
-            payment.mpesa_result_description = "Mock completed (no Daraja passkey configured)"
-            payment.provider_reference = f"mock-mpesa-{order.id}-{int(order.created_at.timestamp())}"
-            payment.status = "completed"
-            order.status = "paid"
-            order.payment_status = "paid"
-        else:
-            if not phone_number:
-                raise HTTPException(status_code=400, detail="Phone number is required for M-Pesa payment")
-            stk_response = initiate_daraja_stk_push(order, phone_number)
-            payment.checkout_request_id = str(stk_response.get("CheckoutRequestID"))
-            payment.merchant_request_id = str(stk_response.get("MerchantRequestID"))
-            payment.mpesa_result_description = str(stk_response.get("ResponseDescription"))
-            payment.provider_reference = str(stk_response.get("CheckoutRequestID"))
 
     db.commit()
     db.refresh(payment)
