@@ -4,6 +4,7 @@ import os
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import sys
+from uuid import uuid4
 from urllib import error as urllib_error
 from urllib import request as urllib_request
 
@@ -18,11 +19,12 @@ from sqlalchemy import func, inspect, text
 from sqlalchemy.orm import Session
 
 from app.database import Base, SessionLocal, engine, get_db
-from app.models import Alert, DeliveryOption, Order, OrderItem, Payment, Product, Supplier, Transaction, User
+from app.models import Alert, CheckoutSession, DeliveryOption, Order, OrderItem, Payment, Product, Supplier, Transaction, User
 from app.schemas import (
     AlertRead,
     AlertStatusUpdate,
     AuthResponse,
+    CheckoutSessionRead,
     DeliveryOptionCreate,
     DeliveryOptionRead,
     CheckoutCreate,
@@ -48,6 +50,7 @@ from app.schemas import (
 )
 from app.security import create_access_token, decode_access_token, hash_password, verify_password
 import stripe
+from intasend import APIService
 
 Base.metadata.create_all(bind=engine)
 
@@ -113,6 +116,20 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 if STRIPE_SECRET_KEY:
     stripe.api_key = STRIPE_SECRET_KEY
+
+# ===== INTA SEND CONFIGURATION =====
+INTASEND_TOKEN = os.getenv("INTASEND_TOKEN", "")
+INTASEND_PUBLISHABLE_KEY = os.getenv("INTASEND_PUBLISHABLE_KEY", "")
+INTASEND_TEST_MODE = os.getenv("INTASEND_TEST_MODE", "true").strip().lower() != "false"
+intasend_service = (
+    APIService(
+        token=INTASEND_TOKEN,
+        publishable_key=INTASEND_PUBLISHABLE_KEY,
+        test=INTASEND_TEST_MODE,
+    )
+    if INTASEND_TOKEN and INTASEND_PUBLISHABLE_KEY
+    else None
+)
 
 DARAJA_CONFIG = {
     "consumer_key": os.getenv("DARAJA_CONSUMER_KEY", "LyeAVBQDreamJdZfoWBfL9FLsxZilfnUrwSKG2tEYU0F8EPh"),
@@ -211,6 +228,220 @@ def seed_default_data() -> None:
         db.commit()
     finally:
         db.close()
+
+
+def build_checkout_quote(payload: CheckoutCreate, db: Session) -> tuple[DeliveryOption, list[dict[str, object]], float, float, float]:
+    delivery_option = db.query(DeliveryOption).filter(DeliveryOption.code == payload.delivery_method).first()
+    if delivery_option is None or delivery_option.is_active != 1:
+        raise HTTPException(status_code=400, detail="Delivery method not available")
+
+    normalized_items: dict[int, int] = {}
+    for item in payload.items:
+        normalized_items[item.product_id] = normalized_items.get(item.product_id, 0) + item.quantity
+
+    products = (
+        db.query(Product)
+        .filter(Product.id.in_(normalized_items.keys()))
+        .with_for_update()
+        .all()
+    )
+    product_map = {product.id: product for product in products}
+
+    missing_product_ids = [product_id for product_id in normalized_items if product_id not in product_map]
+    if missing_product_ids:
+        raise HTTPException(status_code=404, detail=f"Product not found: {missing_product_ids[0]}")
+
+    line_items: list[dict[str, object]] = []
+    subtotal = 0.0
+    for product_id, quantity in normalized_items.items():
+        product = product_map[product_id]
+        if product.quantity < quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock for {product.name}. Requested {quantity}, available {product.quantity}.",
+            )
+
+        line_total = round(product.unit_price * quantity, 2)
+        subtotal += line_total
+        line_items.append(
+            {
+                "product_id": product.id,
+                "product_name": product.name,
+                "unit_price": float(product.unit_price),
+                "quantity": int(quantity),
+                "line_total": line_total,
+            }
+        )
+
+    subtotal = round(subtotal, 2)
+    delivery_fee = delivery_fee_for_option(delivery_option, payload.delivery_address)
+    total_amount = order_total_amount(subtotal, delivery_fee)
+    return delivery_option, line_items, subtotal, delivery_fee, total_amount
+
+
+def persist_order_from_items(
+    db: Session,
+    *,
+    user: User,
+    customer_name: str,
+    customer_phone: str | None,
+    customer_email: str | None,
+    delivery_method: str | None,
+    delivery_address: str | None,
+    payment_method: str,
+    order_status: str,
+    payment_status: str,
+    delivery_fee: float,
+    subtotal: float,
+    total_amount: float,
+    line_items: list[dict[str, object]],
+    payment_provider: str | None,
+    payment_method_label: str | None,
+    provider_reference: str | None,
+) -> Order:
+    product_ids = [int(item["product_id"]) for item in line_items]
+    products = db.query(Product).filter(Product.id.in_(product_ids)).with_for_update().all()
+    product_map = {product.id: product for product in products}
+
+    for item in line_items:
+        product_id = int(item["product_id"])
+        quantity = int(item["quantity"])
+        product = product_map.get(product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+        if product.quantity < quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock for {product.name}. Requested {quantity}, available {product.quantity}.",
+            )
+
+    order = Order(
+        user_id=user.id,
+        customer_name=customer_name,
+        customer_phone=customer_phone,
+        customer_email=customer_email,
+        status=order_status,
+        payment_method=payment_method,
+        payment_status=payment_status,
+        delivery_method=delivery_method,
+        delivery_address=delivery_address,
+        delivery_fee=delivery_fee,
+        subtotal=subtotal,
+        total_amount=total_amount,
+    )
+    db.add(order)
+    db.flush()
+
+    for item in line_items:
+        product_id = int(item["product_id"])
+        quantity = int(item["quantity"])
+        line_total = float(item["line_total"])
+        product = product_map[product_id]
+
+        product.quantity -= quantity
+        db.add(
+            OrderItem(
+                order_id=order.id,
+                product_id=product.id,
+                product_name=str(item["product_name"]),
+                unit_price=float(item["unit_price"]),
+                quantity=quantity,
+                line_total=line_total,
+            )
+        )
+        db.add(
+            Transaction(
+                product_id=product.id,
+                transaction_type="sale",
+                quantity=quantity,
+                unit_price=float(item["unit_price"]),
+                total_amount=line_total,
+            )
+        )
+        check_product_alerts(db, product)
+
+    if payment_provider is not None:
+        db.add(
+            Payment(
+                order_id=order.id,
+                user_id=order.user_id,
+                provider=payment_provider,
+                method=payment_method_label or payment_method,
+                status=payment_status,
+                amount=total_amount,
+                currency="KES",
+                provider_reference=provider_reference,
+            )
+        )
+
+    return order
+
+
+def get_checkout_session_or_404(db: Session, checkout_id: str, user: User) -> CheckoutSession:
+    checkout_session = db.query(CheckoutSession).filter(CheckoutSession.session_key == checkout_id).first()
+    if checkout_session is None:
+        raise HTTPException(status_code=404, detail="Checkout session not found")
+
+    if checkout_session.user_id != user.id and user.role not in {"admin", "staff"}:
+        raise HTTPException(status_code=403, detail="You don't own this checkout session")
+
+    return checkout_session
+
+
+def load_checkout_items(checkout_session: CheckoutSession) -> list[dict[str, object]]:
+    try:
+        items = json.loads(checkout_session.items_json)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=500, detail="Stored checkout items are invalid") from exc
+
+    if not isinstance(items, list):
+        raise HTTPException(status_code=500, detail="Stored checkout items are invalid")
+
+    return items
+
+
+def finalize_checkout_session(
+    db: Session,
+    checkout_session: CheckoutSession,
+    *,
+    payment_provider: str,
+    payment_method_label: str,
+    provider_reference: str,
+) -> Order:
+    if checkout_session.order_id is not None:
+        existing_order = db.query(Order).filter(Order.id == checkout_session.order_id).first()
+        if existing_order is not None:
+            return existing_order
+
+    line_items = load_checkout_items(checkout_session)
+    checkout_user = db.query(User).filter(User.id == checkout_session.user_id).first()
+    if checkout_user is None:
+        raise HTTPException(status_code=404, detail="Checkout session user not found")
+
+    order = persist_order_from_items(
+        db,
+        user=checkout_user,
+        customer_name=checkout_session.customer_name,
+        customer_phone=checkout_session.customer_phone,
+        customer_email=checkout_session.customer_email,
+        delivery_method=checkout_session.delivery_method,
+        delivery_address=checkout_session.delivery_address,
+        payment_method=checkout_session.payment_method,
+        order_status="paid",
+        payment_status="paid",
+        delivery_fee=checkout_session.delivery_fee,
+        subtotal=checkout_session.subtotal,
+        total_amount=checkout_session.total_amount,
+        line_items=line_items,
+        payment_provider=payment_provider,
+        payment_method_label=payment_method_label,
+        provider_reference=provider_reference,
+    )
+    checkout_session.order_id = order.id
+    checkout_session.status = "completed"
+    checkout_session.provider_reference = provider_reference
+    db.add(checkout_session)
+    return order
 
 
 seed_default_data()
@@ -494,9 +725,27 @@ def payment_methods() -> list[dict[str, str]]:
     return [
         {"code": "cash_on_delivery", "name": "Cash on Delivery", "provider": "cash_on_delivery"},
         {"code": "mpesa_daraja", "name": "M-Pesa Daraja", "provider": "mpesa_daraja"},
+        {"code": "intasend_mpesa", "name": "IntaSend M-Pesa", "provider": "intasend_mpesa"},
         {"code": "paypal", "name": "PayPal", "provider": "paypal"},
         {"code": "mock_card", "name": "Card (mock)", "provider": "mock_card"},
     ]
+
+
+def get_intasend_service() -> APIService:
+    if intasend_service is None:
+        raise HTTPException(status_code=500, detail="IntaSend is not configured on the server")
+    return intasend_service
+
+
+def normalize_kenyan_phone(phone_number: str) -> str:
+    digits = "".join(character for character in str(phone_number) if character.isdigit())
+    if digits.startswith("0") and len(digits) >= 10:
+        return "254" + digits[1:]
+    if digits.startswith("254"):
+        return digits
+    if digits.startswith("7") and len(digits) == 9:
+        return "254" + digits
+    return digits
 
 
 @app.get("/delivery-options", response_model=list[DeliveryOptionRead])
@@ -586,6 +835,7 @@ def initiate_payment(
 
     provider_map = {
         "mpesa_daraja": "M-Pesa Daraja",
+        "intasend_mpesa": "IntaSend M-Pesa",
         "paypal": "PayPal",
         "mock_card": "Card",
         "cash_on_delivery": "Cash on Delivery",
@@ -736,6 +986,173 @@ def mock_complete_payment(
     db.commit()
     db.refresh(payment)
     return payment
+
+
+@app.post("/api/intasend-stk-push")
+async def intasend_stk_push(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    try:
+        service = get_intasend_service()
+        body = await request.json()
+        checkout_id = body.get("checkout_id")
+        phone_number = body.get("phone_number")
+
+        if not checkout_id or not phone_number:
+            raise HTTPException(status_code=400, detail="Checkout ID and phone number are required")
+
+        checkout_session = get_checkout_session_or_404(db, str(checkout_id), user)
+        if checkout_session.payment_method != "intasend_mpesa":
+            raise HTTPException(status_code=400, detail="This checkout session is not for IntaSend payments")
+
+        normalized_phone = normalize_kenyan_phone(phone_number)
+        if not normalized_phone:
+            raise HTTPException(status_code=400, detail="Enter a valid Kenyan phone number")
+
+        api_ref = f"BIDHAA-CS-{checkout_session.session_key}"
+        response = service.collect.mpesa_stk_push(
+            phone_number=normalized_phone,
+            amount=round(checkout_session.total_amount, 2),
+            narrative=f"Checkout {checkout_session.session_key} - BidhaaHub",
+            api_ref=api_ref,
+            name=checkout_session.customer_name,
+            email=checkout_session.customer_email or user.email,
+        )
+
+        invoice_block = response.get("invoice") if isinstance(response, dict) else None
+        invoice_id = None
+        if isinstance(invoice_block, dict):
+            invoice_id = invoice_block.get("invoice_id") or invoice_block.get("id")
+        invoice_id = invoice_id or response.get("invoice_id") or response.get("checkout_id") or response.get("id")
+
+        checkout_session.status = "payment_in_progress"
+        checkout_session.provider_reference = str(invoice_id or api_ref)
+        checkout_session.customer_phone = checkout_session.customer_phone or normalized_phone
+        db.commit()
+
+        return {
+            "status": "initiated",
+            "invoice_id": invoice_id,
+            "message": "STK Push sent to your phone. Enter PIN to complete payment.",
+            "raw": response,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"IntaSend STK push error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/intasend-status/{invoice_id}")
+def intasend_status(invoice_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    try:
+        service = get_intasend_service()
+        response = service.collect.status(invoice_id=invoice_id)
+        invoice_block = response.get("invoice") if isinstance(response, dict) else None
+        state = "unknown"
+        if isinstance(invoice_block, dict):
+            state = str(invoice_block.get("state") or state).lower()
+        else:
+            state = str(response.get("state") or state).lower()
+
+        return {
+            "status": state,
+            "invoice_id": invoice_id,
+            "response": response,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/intasend-confirm")
+async def intasend_confirm(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    try:
+        service = get_intasend_service()
+        body = await request.json()
+        checkout_id = body.get("checkout_id")
+        invoice_id = body.get("invoice_id")
+
+        if not checkout_id or not invoice_id:
+            raise HTTPException(status_code=400, detail="checkout_id and invoice_id are required")
+
+        checkout_session = get_checkout_session_or_404(db, str(checkout_id), user)
+        if checkout_session.payment_method != "intasend_mpesa":
+            raise HTTPException(status_code=400, detail="This checkout session is not for IntaSend payments")
+
+        response = service.collect.status(invoice_id=invoice_id)
+        invoice_block = response.get("invoice") if isinstance(response, dict) else None
+        state = "unknown"
+        if isinstance(invoice_block, dict):
+            state = str(invoice_block.get("state") or state).lower()
+        else:
+            state = str(response.get("state") or state).lower()
+
+        if state not in {"completed", "complete", "paid", "succeeded", "success"}:
+            raise HTTPException(status_code=400, detail=f"Payment not completed yet. Status: {state}")
+
+        order = finalize_checkout_session(
+            db,
+            checkout_session,
+            payment_provider="intasend",
+            payment_method_label="Mpesa",
+            provider_reference=str(invoice_id),
+        )
+
+        db.commit()
+        db.refresh(order)
+
+        return {"status": "success", "order_id": order.id, "payment_status": order.payment_status}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/intasend-webhook")
+async def intasend_webhook(request: Request, db: Session = Depends(get_db)):
+    try:
+        payload = await request.json()
+        invoice_block = payload.get("invoice") if isinstance(payload, dict) else None
+        meta_block = payload.get("meta") if isinstance(payload, dict) else None
+        state = "unknown"
+        invoice_id = None
+        api_ref = None
+
+        if isinstance(invoice_block, dict):
+            state = str(invoice_block.get("state") or state).lower()
+            invoice_id = invoice_block.get("invoice_id") or invoice_block.get("id")
+            api_ref = invoice_block.get("api_ref")
+
+        if isinstance(meta_block, dict):
+            api_ref = api_ref or meta_block.get("api_ref")
+
+        if state not in {"completed", "complete", "paid", "succeeded", "success"}:
+            return {"status": "ignored", "state": state}
+
+        checkout_session = None
+        if api_ref and str(api_ref).startswith("BIDHAA-CS-"):
+            checkout_id = str(api_ref).replace("BIDHAA-CS-", "")
+            checkout_session = db.query(CheckoutSession).filter(CheckoutSession.session_key == checkout_id).first()
+
+        if checkout_session is None and invoice_id:
+            checkout_session = db.query(CheckoutSession).filter(CheckoutSession.provider_reference == str(invoice_id)).first()
+
+        if checkout_session is None:
+            return {"status": "ignored", "message": "Checkout session not found"}
+
+        order = finalize_checkout_session(
+            db,
+            checkout_session,
+            payment_provider="intasend",
+            payment_method_label="Mpesa",
+            provider_reference=str(invoice_id or api_ref or f"intasend-{checkout_session.session_key}"),
+        )
+
+        db.commit()
+        return {"status": "success", "order_id": order.id}
+    except Exception as e:
+        print(f"IntaSend webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/suppliers", response_model=SupplierRead)
@@ -912,119 +1329,76 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
     return tx
 
 
-@app.post("/checkout", response_model=OrderRead)
-def checkout_order(payload: CheckoutCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> Order:
+@app.post("/checkout")
+def checkout_order(payload: CheckoutCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict[str, object]:
     if not payload.items:
         raise HTTPException(status_code=400, detail="Order must contain at least one item")
 
-    delivery_option = db.query(DeliveryOption).filter(DeliveryOption.code == payload.delivery_method).first()
-    if delivery_option is None or delivery_option.is_active != 1:
-        raise HTTPException(status_code=400, detail="Delivery method not available")
-
     payment_method = payload.payment_method.strip().lower()
     # Only allow COD or Stripe for card payments
-    allowed_payment_methods = {"cash_on_delivery", "stripe"}
+    allowed_payment_methods = {"cash_on_delivery", "stripe", "intasend_mpesa"}
     if payment_method not in allowed_payment_methods:
         raise HTTPException(status_code=400, detail="Payment method not available")
+    delivery_option, line_items, subtotal, delivery_fee, total_amount = build_checkout_quote(payload, db)
 
-    normalized_items: dict[int, int] = {}
-    for item in payload.items:
-        normalized_items[item.product_id] = normalized_items.get(item.product_id, 0) + item.quantity
-
-    products = (
-        db.query(Product)
-        .filter(Product.id.in_(normalized_items.keys()))
-        .with_for_update()
-        .all()
-    )
-    product_map = {product.id: product for product in products}
-
-    missing_product_ids = [product_id for product_id in normalized_items if product_id not in product_map]
-    if missing_product_ids:
-        raise HTTPException(status_code=404, detail=f"Product not found: {missing_product_ids[0]}")
-
-    line_items: list[dict[str, object]] = []
-    subtotal = 0.0
-    delivery_fee = delivery_fee_for_option(delivery_option, payload.delivery_address)
-
-    for product_id, quantity in normalized_items.items():
-        product = product_map[product_id]
-        if product.quantity < quantity:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Insufficient stock for {product.name}. Requested {quantity}, available {product.quantity}.",
-            )
-
-        line_total = round(product.unit_price * quantity, 2)
-        subtotal += line_total
-        line_items.append(
-            {
-                "product": product,
-                "quantity": quantity,
-                "line_total": line_total,
-            }
+    if payment_method == "cash_on_delivery":
+        order = persist_order_from_items(
+            db,
+            user=user,
+            customer_name=payload.customer_name.strip(),
+            customer_phone=payload.customer_phone,
+            customer_email=payload.customer_email,
+            delivery_method=delivery_option.code,
+            delivery_address=payload.delivery_address,
+            payment_method=payment_method,
+            order_status="pending",
+            payment_status="pending",
+            delivery_fee=delivery_fee,
+            subtotal=subtotal,
+            total_amount=total_amount,
+            line_items=line_items,
+            payment_provider="cash_on_delivery",
+            payment_method_label="Cash on Delivery",
+            provider_reference=None,
         )
+        db.commit()
+        db.refresh(order)
+        return {
+            "mode": "order",
+            "id": order.id,
+            "status": order.status,
+            "payment_status": order.payment_status,
+            "total_amount": order.total_amount,
+        }
 
-    order = Order(
+    checkout_session = CheckoutSession(
         user_id=user.id,
+        session_key=uuid4().hex,
         customer_name=payload.customer_name.strip(),
         customer_phone=payload.customer_phone,
         customer_email=payload.customer_email,
-        status="pending",
         payment_method=payment_method,
-        payment_status="pending",
         delivery_method=delivery_option.code,
         delivery_address=payload.delivery_address,
         delivery_fee=delivery_fee,
-        subtotal=round(subtotal, 2),
-        total_amount=order_total_amount(round(subtotal, 2), delivery_fee),
+        subtotal=subtotal,
+        total_amount=total_amount,
+        items_json=json.dumps(line_items),
+        status="pending",
     )
-    db.add(order)
-    db.flush()
-
-    for item in line_items:
-        product = item["product"]
-        quantity = item["quantity"]
-        line_total = item["line_total"]
-
-        product.quantity -= int(quantity)
-        db.add(
-            OrderItem(
-                order_id=order.id,
-                product_id=product.id,
-                product_name=product.name,
-                unit_price=product.unit_price,
-                quantity=int(quantity),
-                line_total=float(line_total),
-            )
-        )
-        db.add(
-            Transaction(
-                product_id=product.id,
-                transaction_type="sale",
-                quantity=int(quantity),
-                unit_price=product.unit_price,
-                total_amount=float(line_total),
-            )
-        )
-        check_product_alerts(db, product)
-
-    db.add(
-        Payment(
-            order_id=order.id,
-            user_id=user.id,
-            provider=payment_method,
-            method=payment_method.replace("_", " ").title(),
-            status="pending",
-            amount=order.total_amount,
-            currency="KES",
-            provider_reference=f"{payment_method}-{order.id}-{int(order.created_at.timestamp())}",
-        )
-    )
-
+    db.add(checkout_session)
     db.commit()
-    db.refresh(order)
-    return order
+    db.refresh(checkout_session)
+    return {
+        "mode": "checkout_session",
+        "checkout_id": checkout_session.session_key,
+        "status": checkout_session.status,
+        "payment_method": checkout_session.payment_method,
+        "subtotal": checkout_session.subtotal,
+        "delivery_fee": checkout_session.delivery_fee,
+        "total_amount": checkout_session.total_amount,
+        "created_at": checkout_session.created_at,
+    }
 
 
 # ===== STRIPE PAYMENT ENDPOINTS =====
@@ -1038,26 +1412,27 @@ async def create_payment_intent(request: Request, db: Session = Depends(get_db),
             raise HTTPException(status_code=500, detail="Invalid Stripe secret key format on the server")
 
         body = await request.json()
-        order_id = body.get("order_id")
-        if not order_id:
-            raise HTTPException(status_code=400, detail="Order ID is required")
+        checkout_id = body.get("checkout_id")
+        if not checkout_id:
+            raise HTTPException(status_code=400, detail="Checkout ID is required")
 
-        order = db.query(Order).filter(Order.id == int(order_id)).first()
-        if not order:
-            raise HTTPException(status_code=404, detail="Order not found")
-
-        if order.user_id != user.id and user.role not in ["admin", "staff"]:
-            raise HTTPException(status_code=403, detail="You don't own this order")
+        checkout_session = get_checkout_session_or_404(db, str(checkout_id), user)
+        if checkout_session.payment_method != "stripe":
+            raise HTTPException(status_code=400, detail="This checkout session is not for Stripe payments")
 
         # Amount in smallest currency unit (KES requires x100 conversion)
-        amount = int(order.total_amount * 100)
+        amount = int(checkout_session.total_amount * 100)
 
         intent = stripe.PaymentIntent.create(
             amount=amount,
             currency="kes",
-            metadata={"order_id": str(order.id), "user_id": str(user.id)},
+            metadata={"checkout_id": str(checkout_session.session_key), "user_id": str(user.id)},
             payment_method_types=["card"],
         )
+
+        checkout_session.status = "payment_in_progress"
+        checkout_session.provider_reference = intent.id
+        db.commit()
 
         return {"client_secret": intent.client_secret, "payment_intent_id": intent.id}
     except stripe.error.StripeError as e:
@@ -1066,44 +1441,126 @@ async def create_payment_intent(request: Request, db: Session = Depends(get_db),
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/confirm-payment")
+async def confirm_payment(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Immediately update order status after successful Stripe payment (frontend calls this on success)"""
+    try:
+        if not STRIPE_SECRET_KEY:
+            raise HTTPException(status_code=500, detail="Stripe secret key is not configured on the server")
+
+        body = await request.json()
+        payment_intent_id = body.get("payment_intent_id")
+        checkout_id = body.get("checkout_id")
+
+        if not payment_intent_id or not checkout_id:
+            raise HTTPException(status_code=400, detail="payment_intent_id and checkout_id are required")
+
+        # Verify the payment intent with Stripe
+        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        
+        if intent.status != "succeeded":
+            raise HTTPException(status_code=400, detail=f"Payment not succeeded. Status: {intent.status}")
+
+        checkout_session = get_checkout_session_or_404(db, str(checkout_id), user)
+        if checkout_session.payment_method != "stripe":
+            raise HTTPException(status_code=400, detail="This checkout session is not for Stripe payments")
+
+        order = finalize_checkout_session(
+            db,
+            checkout_session,
+            payment_provider="stripe",
+            payment_method_label="Card",
+            provider_reference=payment_intent_id,
+        )
+
+        db.commit()
+        db.refresh(order)
+        print(f"✅ Checkout {checkout_id} finalized as paid via confirm-payment endpoint")
+        
+        return {"status": "success", "order_id": order.id, "payment_status": order.payment_status}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Confirm payment error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/webhook-status")
+def webhook_status():
+    """Verify webhook configuration status"""
+    return {
+        "status": "configured" if STRIPE_WEBHOOK_SECRET else "not_configured",
+        "webhook_secret_set": bool(STRIPE_WEBHOOK_SECRET),
+        "endpoint": "/api/stripe-webhook",
+        "message": "Webhook is ready to receive Stripe events" if STRIPE_WEBHOOK_SECRET else "Webhook secret not set"
+    }
+
+
 @app.post("/api/stripe-webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
+    
+    print(f"🔔 Webhook received - signature header: {sig_header is not None}")
+    
     try:
-        if STRIPE_WEBHOOK_SECRET:
-            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-        else:
-            event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
+        if not STRIPE_WEBHOOK_SECRET:
+            print("⚠️  No webhook secret configured")
+            raise HTTPException(status_code=500, detail="Webhook secret not configured")
+
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        print(f"✅ Webhook signature verified. Event type: {event.type}")
 
         if event.type == "payment_intent.succeeded":
             payment_intent = event.data.object
-            order_id = payment_intent.metadata.get("order_id")
-            if order_id:
-                order = db.query(Order).filter(Order.id == int(order_id)).first()
-                if order and order.payment_status != "paid":
-                    order.status = "paid"
-                    order.payment_status = "paid"
-                    payment_exists = db.query(Payment).filter(Payment.provider_reference == payment_intent.id).first()
-                    if not payment_exists:
-                        payment = Payment(
-                            order_id=order.id,
-                            user_id=order.user_id,
-                            provider="stripe",
-                            method="card",
-                            status="completed",
-                            amount=order.total_amount,
-                            currency="KES",
-                            provider_reference=payment_intent.id,
-                        )
-                        db.add(payment)
-                    db.commit()
-                    print(f"✅ Order {order_id} marked as paid via Stripe webhook")
+            checkout_id = payment_intent.metadata.get("checkout_id")
+            print(f"💳 Payment Intent Succeeded - Checkout ID: {checkout_id}, Intent: {payment_intent.id}")
 
-        return {"status": "success"}
+            if checkout_id:
+                checkout_session = db.query(CheckoutSession).filter(CheckoutSession.session_key == checkout_id).first()
+                if not checkout_session:
+                    print(f"❌ Checkout session {checkout_id} not found")
+                    raise HTTPException(status_code=404, detail=f"Checkout session {checkout_id} not found")
+
+                order = finalize_checkout_session(
+                    db,
+                    checkout_session,
+                    payment_provider="stripe",
+                    payment_method_label="Card",
+                    provider_reference=payment_intent.id,
+                )
+                db.commit()
+                print(f"✅ Checkout {checkout_id} finalized via Stripe webhook as order {order.id}")
+            else:
+                print(f"⚠️  No checkout_id in payment intent metadata")
+
+        elif event.type == "payment_intent.payment_failed":
+            payment_intent = event.data.object
+            checkout_id = payment_intent.metadata.get("checkout_id")
+            print(f"❌ Payment Intent Failed - Checkout ID: {checkout_id}")
+            if checkout_id:
+                checkout_session = db.query(CheckoutSession).filter(CheckoutSession.session_key == checkout_id).first()
+                if checkout_session:
+                    checkout_session.status = "failed"
+                    checkout_session.provider_reference = payment_intent.id
+                    db.commit()
+                    print(f"⚠️  Checkout {checkout_id} marked as payment failed")
+        else:
+            print(f"ℹ️  Unhandled event type: {event.type}")
+
+        return {"status": "success", "event_type": event.type}
+    except stripe.error.SignatureVerificationError as e:
+        print(f"❌ Signature verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Webhook error: {e}")
-        return {"status": "error", "message": str(e)}
+        print(f"❌ Webhook error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/orders", response_model=list[OrderRead])

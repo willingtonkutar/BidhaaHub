@@ -2713,6 +2713,95 @@
       font-size: 0.9rem;
     }
 
+    .payment-options {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .payment-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+      background: color-mix(in srgb, var(--panel) 88%, transparent);
+    }
+
+    .payment-option:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .payment-option input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .payment-icon {
+      font-size: 1.65rem;
+      line-height: 1;
+    }
+
+    .payment-info strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 3px;
+    }
+
+    .payment-info span {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .payment-detail {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .intasend-phone-input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
+    .intasend-status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      display: none;
+    }
+
+    .intasend-status.pending {
+      display: block;
+      background: rgba(245, 158, 11, 0.14);
+      color: #f59e0b;
+    }
+
+    .intasend-status.success {
+      display: block;
+      background: rgba(34, 197, 94, 0.14);
+      color: #22c55e;
+    }
+
+    .intasend-status.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.14);
+      color: #ef4444;
+    }
+
     .place-order-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -3134,9 +3223,39 @@
                 </div>
 
                 <div class="payment-section">
-                  <h4>Payment</h4>
-                  <div id="card-element" class="stripe-card-element"></div>
-                  <div id="card-errors" class="stripe-errors" role="alert"></div>
+                  <h4>Select Payment Method</h4>
+                  <div class="payment-options">
+                    <label class="payment-option">
+                      <input type="radio" name="payment_method" value="stripe" checked>
+                      <div class="payment-icon">💳</div>
+                      <div class="payment-info">
+                        <strong>Card / Stripe</strong>
+                        <span>Pay with credit or debit card</span>
+                      </div>
+                    </label>
+                    <label class="payment-option">
+                      <input type="radio" name="payment_method" value="intasend_mpesa">
+                      <div class="payment-icon">📱</div>
+                      <div class="payment-info">
+                        <strong>IntaSend M-Pesa</strong>
+                        <span>Enter your M-Pesa phone number and get an STK push</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div id="stripe-payment" class="payment-detail">
+                    <div id="card-element" class="stripe-card-element"></div>
+                    <div id="card-errors" class="stripe-errors" role="alert"></div>
+                  </div>
+
+                  <div id="intasend-payment" class="payment-detail" style="display: none;">
+                    <div class="form-group">
+                      <label>M-Pesa Phone Number</label>
+                      <input type="tel" id="intasend-phone" class="intasend-phone-input" placeholder="0712345678" />
+                      <p style="margin-top: 6px; font-size: 0.85rem; color: var(--muted);">Use the phone number registered for M-Pesa.</p>
+                    </div>
+                    <div id="intasend-status" class="intasend-status"></div>
+                  </div>
                 </div>
 
                 <button class="place-order-btn" id="submit-payment-btn">
@@ -3816,7 +3935,11 @@
   let stripeClient = null;
   let stripeElements = null;
   let cardElement = null;
-  let currentOrderId = null;
+  let currentCheckoutId = null;
+  let currentIntaSendInvoiceId = null;
+  let currentIntaSendCheckoutId = null;
+  let intasendPollingTimer = null;
+  let paymentMethodToggleInitialized = false;
 
   function initStripe() {
     if (!window.Stripe) return;
@@ -3857,6 +3980,126 @@
     }
   }
 
+  function updatePaymentMethodVisibility() {
+    const selectedPayment = document.querySelector('input[name="payment_method"]:checked')?.value || 'stripe';
+    const stripePayment = document.getElementById('stripe-payment');
+    const intasendPayment = document.getElementById('intasend-payment');
+
+    if (stripePayment) stripePayment.style.display = selectedPayment === 'stripe' ? 'block' : 'none';
+    if (intasendPayment) intasendPayment.style.display = selectedPayment === 'intasend_mpesa' ? 'block' : 'none';
+
+    if (selectedPayment === 'stripe' && document.getElementById('card-element')) {
+      setTimeout(() => initStripeElements(), 50);
+    }
+  }
+
+  function initPaymentMethodToggle() {
+    if (paymentMethodToggleInitialized) {
+      updatePaymentMethodVisibility();
+      return;
+    }
+
+    const methodInputs = document.querySelectorAll('input[name="payment_method"]');
+    if (!methodInputs.length) return;
+
+    methodInputs.forEach(input => {
+      input.addEventListener('change', updatePaymentMethodVisibility);
+    });
+
+    paymentMethodToggleInitialized = true;
+    updatePaymentMethodVisibility();
+  }
+
+  function normalizeIntaSendPhone(phoneNumber) {
+    const digits = String(phoneNumber || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('254')) return digits;
+    if (digits.startsWith('0') && digits.length >= 10) return `254${digits.slice(1)}`;
+    if (digits.startsWith('7') && digits.length === 9) return `254${digits}`;
+    return digits;
+  }
+
+  function setIntaSendStatus(message, statusClass = '') {
+    const statusNode = document.getElementById('intasend-status');
+    if (!statusNode) return;
+    statusNode.className = `intasend-status ${statusClass}`.trim();
+    statusNode.textContent = message;
+  }
+
+  function stopIntaSendPolling() {
+    if (intasendPollingTimer) {
+      clearInterval(intasendPollingTimer);
+      intasendPollingTimer = null;
+    }
+  }
+
+  async function confirmIntaSendPayment(checkoutId, invoiceId) {
+    const response = await fetch(`${API_URL}/api/intasend-confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+      body: JSON.stringify({ checkout_id: checkoutId, invoice_id: invoiceId })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Failed to confirm IntaSend payment');
+    return data;
+  }
+
+  function startIntaSendPolling(checkoutId, invoiceId) {
+    stopIntaSendPolling();
+    currentIntaSendCheckoutId = checkoutId;
+    currentIntaSendInvoiceId = invoiceId;
+
+    intasendPollingTimer = setInterval(async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/intasend-status/${invoiceId}`, {
+          headers: { 'Authorization': `Bearer ${currentToken}` }
+        });
+        const data = await response.json();
+        const state = String(data.status || '').toLowerCase();
+
+        if (state === 'completed' || state === 'complete' || state === 'paid' || state === 'success' || state === 'succeeded') {
+          stopIntaSendPolling();
+          setIntaSendStatus('✅ Payment completed. Confirming order...', 'success');
+          const confirmData = await confirmIntaSendPayment(checkoutId, invoiceId);
+          alert(`✅ IntaSend payment successful! Order #${confirmData.order_id} is now paid.`);
+          cartItems = [];
+          localStorage.removeItem('cart');
+          renderCart();
+          showPage('my-orders');
+          if (typeof loadMyOrders === 'function') loadMyOrders();
+        } else if (state === 'failed' || state === 'canceled' || state === 'cancelled') {
+          stopIntaSendPolling();
+          setIntaSendStatus('❌ Payment failed or was cancelled. Please try again.', 'error');
+        } else {
+          setIntaSendStatus('⏳ Waiting for M-Pesa confirmation on your phone...', 'pending');
+        }
+      } catch (error) {
+        console.error('IntaSend polling error:', error);
+      }
+    }, 4000);
+  }
+
+  async function initiateIntaSendPayment(checkoutId, phoneNumber) {
+    setIntaSendStatus('⏳ Sending M-Pesa STK push...', 'pending');
+
+    const response = await fetch(`${API_URL}/api/intasend-stk-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+      body: JSON.stringify({ checkout_id: checkoutId, phone_number: phoneNumber })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || data.message || 'Failed to start IntaSend payment');
+
+    const invoiceId = data.invoice_id || data.checkout_id || data.raw?.invoice_id || data.raw?.invoice?.invoice_id;
+    if (!invoiceId) throw new Error('IntaSend did not return an invoice id');
+
+    setIntaSendStatus('📱 STK push sent. Check your phone and enter your M-Pesa PIN.', 'pending');
+    startIntaSendPolling(checkoutId, invoiceId);
+    return data;
+  }
+
   async function createOrderAndPay() {
     const submitBtn = document.getElementById('submit-payment-btn');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Processing...'; }
@@ -3867,44 +4110,61 @@
       const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
       if (!deliveryMethod) throw new Error('Please select a delivery method');
 
-      const deliveryFee = getCheckoutDeliveryFee(deliveryMethod.value);
-      const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price || item.unit_price || 0) * Number(item.quantity || 0)), 0);
-      const total = subtotal + deliveryFee;
-
+      const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'stripe';
       const payload = {
         customer_name: document.getElementById('checkoutName')?.value || currentUser?.full_name || '',
         customer_phone: document.getElementById('checkoutPhone')?.value || '',
         customer_email: document.getElementById('checkoutEmail')?.value || currentUser?.email || '',
         delivery_address: document.getElementById('checkoutAddress')?.value || '',
-        payment_method: 'stripe',
+        payment_method: selectedPaymentMethod,
         delivery_method: deliveryMethod.value,
         items: cartItems.map(item => ({ product_id: item.id, quantity: item.quantity }))
       };
 
       if (!payload.customer_name || !payload.delivery_address) throw new Error('Please fill in your name and delivery address');
+      if (selectedPaymentMethod === 'intasend_mpesa') {
+        const phoneNumber = document.getElementById('intasend-phone')?.value || '';
+        if (!phoneNumber.trim()) throw new Error('Please enter your M-Pesa phone number');
+        payload.customer_phone = phoneNumber;
+      }
 
-      // Create order first
       const orderResponse = await fetch(`${API_URL}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
         body: JSON.stringify(payload)
       });
 
-      const orderData = await orderResponse.json();
-      if (!orderResponse.ok) throw new Error(orderData.detail || 'Failed to create order');
-      currentOrderId = orderData.id;
+      const checkoutData = await orderResponse.json();
+      if (!orderResponse.ok) throw new Error(checkoutData.detail || 'Failed to start checkout');
 
-      // Create payment intent
+      if (checkoutData.mode === 'order') {
+        alert(`✅ Order placed successfully! Order #${checkoutData.id} is now pending.`);
+        cartItems = [];
+        localStorage.removeItem('cart');
+        renderCart();
+        showPage('my-orders');
+        if (typeof loadMyOrders === 'function') loadMyOrders();
+        return;
+      }
+
+      currentCheckoutId = checkoutData.checkout_id;
+      if (!currentCheckoutId) throw new Error('Checkout session was not created');
+
+      if (selectedPaymentMethod === 'intasend_mpesa') {
+        const phoneNumber = document.getElementById('intasend-phone')?.value || '';
+        await initiateIntaSendPayment(currentCheckoutId, phoneNumber);
+        return;
+      }
+
       const paymentResponse = await fetch(`${API_URL}/api/create-payment-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
-        body: JSON.stringify({ order_id: currentOrderId })
+        body: JSON.stringify({ checkout_id: currentCheckoutId })
       });
 
       const paymentData = await paymentResponse.json();
       if (!paymentResponse.ok) throw new Error(paymentData.detail || 'Failed to initialize payment');
 
-      // Confirm card payment
       if (!stripeClient || !cardElement) initStripeElements();
       const result = await stripeClient.confirmCardPayment(paymentData.client_secret, {
         payment_method: { card: cardElement, billing_details: { name: payload.customer_name, email: payload.customer_email } }
@@ -3912,9 +4172,24 @@
 
       if (result.error) throw new Error(result.error.message);
       if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        alert(`✅ Payment successful! Order #${currentOrderId} confirmed.`);
-        cartItems = []; localStorage.removeItem('cart'); renderCart();
-        showPage('my-orders'); if (typeof loadMyOrders === 'function') loadMyOrders();
+        const confirmResponse = await fetch(`${API_URL}/api/confirm-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+          body: JSON.stringify({
+            payment_intent_id: result.paymentIntent.id,
+            checkout_id: currentCheckoutId
+          })
+        });
+
+        const confirmData = await confirmResponse.json();
+        if (!confirmResponse.ok) throw new Error(confirmData.detail || 'Failed to confirm payment on server');
+
+        alert(`✅ Payment successful! Order #${confirmData.order_id} is now paid.`);
+        cartItems = [];
+        localStorage.removeItem('cart');
+        renderCart();
+        showPage('my-orders');
+        if (typeof loadMyOrders === 'function') loadMyOrders();
       }
     } catch (err) {
       console.error('Checkout error:', err);
@@ -4422,10 +4697,12 @@
     if (pageId === 'cart') renderCart();
     if (pageId === 'checkout') {
       renderCheckout();
-      // Initialize Stripe Elements after render
+      initPaymentMethodToggle();
       setTimeout(() => {
-        if (document.getElementById('card-element')) initStripeElements();
+        updatePaymentMethodVisibility();
       }, 100);
+    } else {
+      stopIntaSendPolling();
     }
     if (pageId === 'orders') loadAdminOrders();
     if (pageId === 'my-orders') {
@@ -5139,19 +5416,18 @@
 
       const data = await response.json();
       if (response.ok) {
-        cartItems = [];
-        localStorage.removeItem('cart');
-        renderCart();
-        renderCheckout();
-
-        if (payload.payment_method === 'mpesa_daraja') {
-          alert(`Please check your phone (${payload.customer_phone}) to complete M-Pesa payment.\nOrder ID: ${data.id}`);
-        } else {
+        if (data.mode === 'order') {
+          cartItems = [];
+          localStorage.removeItem('cart');
+          renderCart();
+          renderCheckout();
           alert(`Order placed successfully! Order ID: ${data.id}`);
+          showPage('my-orders');
+          if (typeof loadMyOrders === 'function') loadMyOrders();
+        } else {
+          renderCheckout();
+          alert(`Checkout started. Complete payment to create the order. Checkout ID: ${data.checkout_id}`);
         }
-
-        showPage('my-orders');
-        if (typeof loadMyOrders === 'function') loadMyOrders();
       } else {
         alert('Checkout failed: ' + (data.detail || 'Unknown error'));
       }

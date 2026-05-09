@@ -129,6 +129,29 @@ class Payment(Base):
     user: Mapped[User | None] = relationship(back_populates="payments")
 
 
+class CheckoutSession(Base):
+    __tablename__ = "checkout_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    session_key: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
+    customer_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    customer_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    customer_email: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    payment_method: Mapped[str] = mapped_column(String(40), nullable=False)
+    delivery_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    delivery_fee: Mapped[float] = mapped_column(Float, default=0.0)
+    subtotal: Mapped[float] = mapped_column(Float, nullable=False)
+    total_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    items_json: Mapped[str] = mapped_column(String(8000), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="pending")
+    provider_reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"), nullable=True, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class DeliveryOption(Base):
     __tablename__ = "delivery_options"
 

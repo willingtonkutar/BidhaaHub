@@ -180,6 +180,16 @@ class CheckoutCreate(BaseModel):
     items: list[CheckoutItemCreate] = Field(min_length=1)
 
 
+class CheckoutSessionRead(BaseModel):
+    checkout_id: str
+    status: str
+    payment_method: str
+    subtotal: float
+    delivery_fee: float
+    total_amount: float
+    created_at: datetime
+
+
 class OrderItemRead(BaseModel):
     id: int
     product_id: int
