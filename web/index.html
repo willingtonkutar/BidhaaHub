@@ -602,6 +602,12 @@
       gap: 25px;
       width: max-content;
       will-change: transform;
+      animation: slide-loop 20s linear infinite;
+    }
+
+    @keyframes slide-loop {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
 
     .brand-track img {
@@ -2814,10 +2820,15 @@
     <section class="brand-carousel">
       <h2>Featured Deals</h2>
       <div class="brand-track">
-          <img src="assets/images/popular/fresh_vegetables.png" alt="">
-          <img src="assets/images/popular/seasonal_fruits.png" alt="">
-          <img src="assets/images/popular/groceries.png" alt="">
-          <img src="assets/images/popular/organic_pics.png" alt="">
+          <img src="assets/images/popular/fresh_vegetables.png" alt="Fresh Vegetables">
+          <img src="assets/images/popular/seasonal_fruits.png" alt="Seasonal Fruits">
+          <img src="assets/images/popular/groceries.png" alt="Groceries">
+          <img src="assets/images/popular/organic_pics.png" alt="Organic">
+          <!-- duplicated for smooth infinite scroll -->
+          <img src="assets/images/popular/fresh_vegetables.png" alt="Fresh Vegetables">
+          <img src="assets/images/popular/seasonal_fruits.png" alt="Seasonal Fruits">
+          <img src="assets/images/popular/groceries.png" alt="Groceries">
+          <img src="assets/images/popular/organic_pics.png" alt="Organic">
       </div>
     </section>
 
@@ -2938,6 +2949,7 @@
         <span id="userGreeting" style="color: var(--muted); font-size: 0.9rem;"></span>
         <div class="nav-icons">
           <button class="icon-button" title="Shop" onclick="showPage('shop')">🛍</button>
+          <button class="icon-button" title="Orders" onclick="showPage('my-orders')">📦</button>
           <button class="icon-button" title="Account" onclick="showPage('profile')">👤</button>
           <button class="icon-button" title="Cart" onclick="showPage('cart')">🛒</button>
         </div>
@@ -3142,7 +3154,28 @@
         <section class="page" data-page="my-orders">
           <h2>📦 My Orders</h2>
           <p>Track your orders and their status.</p>
-          <div id="myOrdersContainer"></div>
+          <div class="table-card">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="myOrdersContainer">
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--muted);">Loading your orders...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
 
         <section class="page" data-page="profile">
