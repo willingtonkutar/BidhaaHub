@@ -2077,6 +2077,129 @@
       color: var(--muted);
     }
 
+    /* ===== RECEIPT STYLING ===== */
+    .receipt-container {
+      background: #fff;
+      padding: 32px 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+      color: #1f2937;
+    }
+
+    .receipt-header {
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 16px;
+    }
+
+    .receipt-header .logo { font-size: 2.5rem; margin-bottom: 8px; }
+
+    .receipt-header h2 { font-size: 1.6rem; margin: 8px 0; color: #1f2937; font-weight: 700; }
+
+    .receipt-header .status-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent) 0%, #1f8a68 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .receipt-section { margin-bottom: 20px; }
+
+    .receipt-section h3 {
+      font-size: 0.85rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .receipt-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.95rem;
+      color: #1f2937;
+    }
+
+    .receipt-item.total {
+      border-bottom: 2px solid #1f2937;
+      padding: 14px 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-top: 8px;
+    }
+
+    .receipt-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .receipt-actions button {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .receipt-actions .btn-download {
+      background: linear-gradient(135deg, var(--accent) 0%, #1f8a68 100%);
+      color: white;
+    }
+
+    .receipt-actions .btn-download:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(20, 95, 74, 0.3); }
+
+    .receipt-actions .btn-close {
+      background: #f3f4f6;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+    }
+
+    .receipt-actions .btn-close:hover { background: #e5e7eb; }
+
+    .delivery-instructions {
+      background: linear-gradient(135deg, rgba(20, 95, 74, 0.08), rgba(186, 107, 18, 0.05));
+      padding: 16px;
+      border-radius: 10px;
+      border-left: 4px solid var(--accent);
+      margin: 16px 0;
+      color: #1f2937;
+    }
+
+    .delivery-instructions h4 { margin: 0 0 8px; font-weight: 600; }
+
+    .delivery-instructions p { margin: 6px 0; font-size: 0.95rem; line-height: 1.5; }
+
+    @media print {
+      body { background: white; }
+      .modal { display: flex !important; background: white !important; }
+      .modal-overlay { display: none !important; }
+      .modal-content { box-shadow: none; border: none; max-width: 100%; margin: 0; }
+      .receipt-actions { display: none; }
+      .receipt-container { box-shadow: none; }
+    }
+
+    @media (max-width: 600px) {
+      .receipt-container { padding: 20px 16px; }
+      .receipt-header h2 { font-size: 1.3rem; }
+      .receipt-actions { flex-direction: column; }
+    }
+
     /* ===== FORMS ===== */
     .form-group {
       display: grid;
@@ -4262,6 +4385,13 @@
   </div>
 </div>
 
+<!-- RECEIPT MODAL -->
+<div class="modal" id="receiptModal" style="z-index: 2000;">
+  <div class="modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
+    <div style="padding: 24px;" id="receiptContent"></div>
+  </div>
+</div>
+
 <!-- SUPPLIER MODAL -->
 <div class="modal" id="supplierModal">
   <div class="modal-content">
@@ -4597,12 +4727,10 @@
           stopIntaSendPolling();
           setIntaSendStatus('✅ Payment completed. Confirming order...', 'success');
           const confirmData = await confirmIntaSendPayment(checkoutId, invoiceId);
-          alert(`✅ IntaSend payment successful! Order #${confirmData.order_id} is now paid.`);
           cartItems = [];
           localStorage.removeItem('cart');
           renderCart();
-          showPage('my-orders');
-          if (typeof loadMyOrders === 'function') loadMyOrders();
+          showReceipt(confirmData.order || confirmData.order_id, true);
         } else if (state === 'failed' || state === 'canceled' || state === 'cancelled') {
           stopIntaSendPolling();
           setIntaSendStatus('❌ Payment failed or was cancelled. Please try again.', 'error');
@@ -4719,12 +4847,10 @@
         const confirmData = await confirmResponse.json();
         if (!confirmResponse.ok) throw new Error(confirmData.detail || 'Failed to confirm payment on server');
 
-        alert(`✅ Payment successful! Order #${confirmData.order_id} is now paid.`);
         cartItems = [];
         localStorage.removeItem('cart');
         renderCart();
-        showPage('my-orders');
-        if (typeof loadMyOrders === 'function') loadMyOrders();
+        showReceipt(confirmData.order || confirmData.order_id, true);
       }
     } catch (err) {
       console.error('Checkout error:', err);
@@ -6522,6 +6648,195 @@
         alert('Unable to record waste: ' + (data.detail || 'Unknown error'));
       }
     } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function showReceipt(orderOrId, isPostPayment = false) {
+    const modal = document.getElementById('receiptModal');
+    const content = document.getElementById('receiptContent');
+    let order = orderOrId && typeof orderOrId === 'object' ? orderOrId : null;
+    const orderId = order?.id || orderOrId;
+
+    if (!order) {
+      try {
+        if (currentUser?.role === 'customer') {
+          const response = await fetch(`${API_URL}/orders/me`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+          });
+          const orders = await readJsonResponse(response);
+          customerOrders = Array.isArray(orders) ? orders : [];
+          order = customerOrders.find(item => item.id === orderId) || null;
+        } else {
+          const response = await fetch(`${API_URL}/orders/${orderId}`, {
+            headers: { 'Authorization': `Bearer ${currentToken}` }
+          });
+          if (response.ok) order = await readJsonResponse(response);
+        }
+      } catch (e) {
+        console.error('Error fetching order for receipt:', e);
+      }
+    }
+
+    if (!order) {
+      content.innerHTML = '<p>Order not found</p>';
+      modal.classList.add('active');
+      return;
+    }
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const deliveryMethod = order.delivery_method || 'standard';
+    const isPickup = deliveryMethod.toLowerCase().includes('pickup') || deliveryMethod.toLowerCase().includes('collect');
+
+    let deliveryInstructions = '';
+    if (isPickup) {
+      deliveryInstructions = `
+        <div class="delivery-instructions">
+          <h4>🏪 Pickup Instructions</h4>
+          <p><strong>Show this receipt at our pickup counter</strong> to collect your order. Our staff will verify and prepare your items for collection.</p>
+          <p style="margin-top: 10px; font-weight: 600;">📍 Pickup Location: BidhaaHub Main Store</p>
+        </div>
+      `;
+    } else {
+      deliveryInstructions = `
+        <div class="delivery-instructions">
+          <h4>🚚 Delivery Information</h4>
+          <p>Your order is being prepared and will be delivered soon. You will receive a notification when delivery is on its way.</p>
+          <p style="margin-top: 10px;"><strong>Expected Delivery:</strong> Within 24-48 hours</p>
+        </div>
+      `;
+    }
+
+    content.innerHTML = `
+      <div class="receipt-container">
+        <div class="receipt-header">
+          <div class="logo">📦</div>
+          <h2>ORDER RECEIPT</h2>
+          <div class="status-badge">✓ Payment Confirmed</div>
+        </div>
+
+        <div class="receipt-section">
+          <h3>Order Information</h3>
+          <div class="receipt-item">
+            <span>Order ID</span>
+            <strong>#${order.id}</strong>
+          </div>
+          <div class="receipt-item">
+            <span>Date & Time</span>
+            <span>${new Date(order.created_at).toLocaleString()}</span>
+          </div>
+          <div class="receipt-item">
+            <span>Delivery Method</span>
+            <span>${deliveryMethod}</span>
+          </div>
+        </div>
+
+        <div class="receipt-section">
+          <h3>Items Ordered</h3>
+          ${items.map(item => `
+            <div class="receipt-item">
+              <span>${item.product_name} × ${item.quantity}</span>
+              <span>${item.line_total} KES</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="receipt-section">
+          <h3>Cost Breakdown</h3>
+          <div class="receipt-item">
+            <span>Subtotal</span>
+            <span>${order.subtotal} KES</span>
+          </div>
+          <div class="receipt-item">
+            <span>Delivery Fee</span>
+            <span>${order.delivery_fee} KES</span>
+          </div>
+          <div class="receipt-item total">
+            <span>Total Amount Paid</span>
+            <span>${order.total_amount} KES</span>
+          </div>
+        </div>
+
+        <div class="receipt-section">
+          <h3>Payment Details</h3>
+          <div class="receipt-item">
+            <span>Payment Method</span>
+            <span>${order.payment_method || 'Card'}</span>
+          </div>
+          <div class="receipt-item">
+            <span>Payment Status</span>
+            <span style="color: var(--accent); font-weight: 600;">✓ PAID</span>
+          </div>
+        </div>
+
+        ${deliveryInstructions}
+
+        <div class="receipt-section" style="margin-top: 20px; padding: 16px; background: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb;">
+          <h3>Support</h3>
+          <p style="margin: 8px 0; font-size: 0.95rem;">📧 willykutar@gmail.com</p>
+          <p style="margin: 8px 0; font-size: 0.95rem;">📞 +254 792 063 636</p>
+          <p style="margin: 8px 0; font-size: 0.95rem;">🕐 9am - 9pm Daily</p>
+        </div>
+
+        <div class="receipt-actions">
+          <button class="btn-download" onclick="printReceipt()">📥 Download Receipt (PDF)</button>
+          <button class="btn-close" onclick="closeModal('receiptModal'); ${isPostPayment ? 'showPage(\'my-orders\'); loadMyOrders();' : ''}">Close</button>
+        </div>
+      </div>
+    `;
+    modal.classList.add('active');
+  }
+
+  function printReceipt() {
+    window.print();
+  }
+
+  function buildOrderActionButtons(order) {
+    const isCustomer = currentUser?.role === 'customer';
+    const status = order.status?.toLowerCase() || 'pending';
+    const deliveryMethod = order.delivery_method?.toLowerCase() || '';
+    const isDelivery = deliveryMethod.includes('delivery') || deliveryMethod.includes('home');
+
+    let actionHTML = '';
+
+    if (isCustomer && isDelivery && (status === 'out for delivery' || status === 'preparing')) {
+      actionHTML = `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);">
+          <button class="button" onclick="markOrderReceived(${order.id})" style="width: 100%;">
+            ✓ Mark as Received
+          </button>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px; text-align: center;">
+            Click when you receive your delivery
+          </p>
+        </div>
+      `;
+    }
+
+    return actionHTML;
+  }
+
+  async function markOrderReceived(orderId) {
+    if (!confirm('Mark this order as received?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/orders/${orderId}/mark-received`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        }
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert('✓ Order marked as received. Thank you!');
+        closeModal('orderModal');
+        if (typeof loadMyOrders === 'function') loadMyOrders();
+      } else {
+        alert('Error: ' + (data.detail || 'Could not update order'));
+      }
+    } catch (err) {
+      console.error('Error marking order received:', err);
       alert('Error: ' + err.message);
     }
   }

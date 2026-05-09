@@ -468,6 +468,7 @@ def finalize_checkout_session(
         payment_method=checkout_session.payment_method,
         order_status="paid",
         payment_status="paid",
+        delivery_fee=checkout_session.delivery_fee,
         subtotal=checkout_session.subtotal,
         total_amount=checkout_session.total_amount,
         line_items=line_items,
@@ -494,6 +495,22 @@ def normalize_ke_phone_number(phone_number: str | None) -> str:
     elif digits.startswith("254") and len(digits) == 12:
         return digits
     return digits
+
+
+def delivery_fee_for_option(delivery_option: DeliveryOption, delivery_address: str | None) -> float:
+    fee = float(delivery_option.base_fee or 0.0)
+    if delivery_option.code == "pickup":
+        return 0.0
+
+    address = (delivery_address or "").strip()
+    if not address:
+        return fee
+
+    return fee
+
+
+def order_total_amount(subtotal: float, delivery_fee: float) -> float:
+    return round(float(subtotal) + float(delivery_fee), 2)
 
 
 def daraja_access_token() -> str:
@@ -785,6 +802,31 @@ def update_order_status(
     order.status = payload.status
     if payload.status == "paid":
         order.payment_status = "paid"
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@app.patch("/orders/{order_id}/mark-received", response_model=OrderRead)
+def mark_order_received(
+    order_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Order:
+    """Allow customers to mark their orders as received after delivery."""
+    order = db.get(Order, order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Only allow customers to mark their own orders as received
+    if user.role == "customer" and order.customer_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only mark your own orders as received")
+
+    # Can only mark as received if currently out for delivery or preparing
+    if order.status not in ["preparing", "out_for_delivery", "out for delivery"]:
+        raise HTTPException(status_code=400, detail=f"Cannot mark order as received when status is '{order.status}'")
+
+    order.status = "received"
     db.commit()
     db.refresh(order)
     return order
@@ -1427,7 +1469,12 @@ async def confirm_payment(request: Request, db: Session = Depends(get_db), user:
         db.refresh(order)
         print(f"✅ Checkout {checkout_id} finalized as paid via confirm-payment endpoint")
         
-        return {"status": "success", "order_id": order.id, "payment_status": order.payment_status}
+        return {
+            "status": "success",
+            "order_id": order.id,
+            "payment_status": order.payment_status,
+            "order": OrderRead.model_validate(order).model_dump(),
+        }
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except HTTPException:
