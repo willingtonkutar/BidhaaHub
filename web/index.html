@@ -1287,6 +1287,11 @@
 
     .nav-icons { display: flex; gap: 10px; align-items: center; }
 
+    .customer-action-menu {
+      display: none;
+      position: relative;
+    }
+
     .shop-header {
       display: flex;
       align-items: center;
@@ -1359,6 +1364,33 @@
     .icon-button:hover {
       transform: translateY(-1px);
       border-color: rgba(20, 95, 74, 0.35);
+    }
+
+    body.theme-dark .icon-button,
+    body.theme-dark .customer-nav-links button,
+    body.theme-dark .customer-nav-toggle,
+    body.theme-dark .admin-quick-menu summary,
+    body.theme-dark .admin-quick-list button,
+    body.theme-dark .nav button,
+    body.theme-dark .button-ghost {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    body.theme-dark .icon-button:hover,
+    body.theme-dark .customer-nav-links button:hover,
+    body.theme-dark .customer-nav-links button.active,
+    body.theme-dark .customer-nav-toggle:hover,
+    body.theme-dark .admin-quick-menu summary:hover,
+    body.theme-dark .admin-quick-menu[open] summary,
+    body.theme-dark .admin-quick-list button:hover,
+    body.theme-dark .nav button:hover,
+    body.theme-dark .nav button.active,
+    body.theme-dark .button-ghost:hover {
+      border-color: rgba(74, 222, 128, 0.35);
+      color: #fff;
+      background: rgba(74, 222, 128, 0.12);
     }
 
     .customer-top-nav {
@@ -1541,7 +1573,19 @@
       display: none;
     }
 
+    body.customer-mode .customer-action-menu {
+      display: block;
+    }
+
+    body.customer-mode .topbar-theme-toggle {
+      display: none;
+    }
+
     body.admin-mode .customer-top-nav {
+      display: none;
+    }
+
+    body.admin-mode .customer-action-menu {
       display: none;
     }
 
@@ -2992,13 +3036,29 @@
     .about-content p { font-size: 1.2rem; color: #cbd5e1; line-height: 1.7; }
 
     .support-section { padding: 80px 40px; text-align: center; }
-    .support-section h2 { font-size: 2.4rem; margin-bottom: 15px; color: #fff; }
+    .support-section h2 { font-size: 2.4rem; margin-bottom: 15px; color: var(--ink); }
+    .support-section > p { color: var(--muted); }
     .support-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; margin-top: 40px; }
-    .support-card { background: rgba(255,255,255,0.06); border-radius: 16px; padding: 25px; border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(4px); transition: 0.2s ease; }
+    .support-card { background: var(--panel); border-radius: 16px; padding: 25px; border: 1px solid var(--line); backdrop-filter: blur(4px); transition: 0.2s ease; }
     .support-card:hover { transform: translateY(-6px); border-color: var(--accent); }
     .support-card span { font-size: 2rem; margin-bottom: 12px; display: block; }
-    .support-card h3 { color: #fff; margin-bottom: 8px; }
-    .support-card p { color: #cbd5e1; }
+    .support-card h3 { color: var(--ink); margin-bottom: 8px; }
+    .support-card p { color: var(--muted); }
+
+    body:not(.theme-dark) .support-section h2,
+    body:not(.theme-dark) .support-card h3 {
+      color: #1f2937;
+    }
+
+    body:not(.theme-dark) .support-section > p,
+    body:not(.theme-dark) .support-card p {
+      color: #475569;
+    }
+
+    body.theme-dark .support-card {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
 
     /* Order Summary Card */
     .checkout-card:last-child {
@@ -3390,12 +3450,16 @@
       </div>
       <div class="topbar-actions">
         <span id="userGreeting" style="color: var(--muted); font-size: 0.9rem;"></span>
-        <div class="nav-icons">
-          <button class="icon-button" title="Shop" onclick="showPage('shop')">🛍</button>
-          <button class="icon-button" title="Orders" onclick="showPage('my-orders')">📦</button>
-          <button class="icon-button" title="Account" onclick="showPage('profile')">👤</button>
-          <button class="icon-button" title="Cart" onclick="showPage('cart')">🛒</button>
-        </div>
+        <details class="customer-action-menu admin-quick-menu" id="customerActionMenu">
+          <summary>My Menu ▾</summary>
+          <div class="admin-quick-list">
+            <button type="button" onclick="showCustomerMenuPage('shop')">Shop</button>
+            <button type="button" onclick="showCustomerMenuPage('cart')">Cart</button>
+            <button type="button" onclick="showCustomerMenuPage('my-orders')">Orders</button>
+            <button type="button" onclick="showCustomerMenuPage('profile')">Profile</button>
+            <button type="button" onclick="toggleThemeFromCustomerMenu()">Theme</button>
+          </div>
+        </details>
         <details class="admin-quick-menu" id="adminQuickMenu">
           <summary>Quick Menu ▾</summary>
           <div class="admin-quick-list">
@@ -3408,7 +3472,7 @@
             <button type="button" onclick="showPage('payment-settings')">Settings</button>
           </div>
         </details>
-        <button class="icon-button" onclick="toggleTheme()">🌙</button>
+        <button class="icon-button topbar-theme-toggle" onclick="toggleTheme()">🌙</button>
         <button class="button-ghost" onclick="logout()">Logout</button>
       </div>
     </div>
@@ -5163,6 +5227,11 @@
       adminQuickMenu.open = false;
     }
 
+    const customerActionMenu = document.getElementById('customerActionMenu');
+    if (customerActionMenu && customerActionMenu.open) {
+      customerActionMenu.open = false;
+    }
+
     if (pageId === 'home') loadDashboardData();
     if (pageId === 'products') loadAdminProducts();
     if (pageId === 'add-product') loadSupplierOptions();
@@ -5197,6 +5266,18 @@
     document.querySelectorAll('#customerNavLinks button').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.customerPage === pageId);
     });
+  }
+
+  function showCustomerMenuPage(pageId) {
+    showPage(pageId);
+    const customerActionMenu = document.getElementById('customerActionMenu');
+    if (customerActionMenu) customerActionMenu.open = false;
+  }
+
+  function toggleThemeFromCustomerMenu() {
+    toggleTheme();
+    const customerActionMenu = document.getElementById('customerActionMenu');
+    if (customerActionMenu) customerActionMenu.open = false;
   }
 
     function handleFooterAbout() {
