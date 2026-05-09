@@ -10,7 +10,7 @@ from urllib import request as urllib_request
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -47,6 +47,7 @@ from app.schemas import (
     ReportSummary,
 )
 from app.security import create_access_token, decode_access_token, hash_password, verify_password
+import stripe
 
 Base.metadata.create_all(bind=engine)
 
@@ -104,6 +105,14 @@ app.add_middleware(
 )
 
 WEB_INDEX = Path(__file__).resolve().parents[1] / "web" / "index.html"
+
+# ===== STRIPE CONFIGURATION =====
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
 
 DARAJA_CONFIG = {
     "consumer_key": os.getenv("DARAJA_CONSUMER_KEY", "LyeAVBQDreamJdZfoWBfL9FLsxZilfnUrwSKG2tEYU0F8EPh"),
@@ -913,7 +922,8 @@ def checkout_order(payload: CheckoutCreate, db: Session = Depends(get_db), user:
         raise HTTPException(status_code=400, detail="Delivery method not available")
 
     payment_method = payload.payment_method.strip().lower()
-    allowed_payment_methods = {"cash_on_delivery", "mpesa_daraja", "paypal", "mock_card"}
+    # Only allow COD or Stripe for card payments
+    allowed_payment_methods = {"cash_on_delivery", "stripe"}
     if payment_method not in allowed_payment_methods:
         raise HTTPException(status_code=400, detail="Payment method not available")
 
@@ -1015,6 +1025,85 @@ def checkout_order(payload: CheckoutCreate, db: Session = Depends(get_db), user:
     db.commit()
     db.refresh(order)
     return order
+
+
+# ===== STRIPE PAYMENT ENDPOINTS =====
+@app.post("/api/create-payment-intent")
+async def create_payment_intent(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    try:
+        if not STRIPE_SECRET_KEY:
+            raise HTTPException(status_code=500, detail="Stripe secret key is not configured on the server")
+
+        if not (STRIPE_SECRET_KEY.startswith("sk_") or STRIPE_SECRET_KEY.startswith("rk_")):
+            raise HTTPException(status_code=500, detail="Invalid Stripe secret key format on the server")
+
+        body = await request.json()
+        order_id = body.get("order_id")
+        if not order_id:
+            raise HTTPException(status_code=400, detail="Order ID is required")
+
+        order = db.query(Order).filter(Order.id == int(order_id)).first()
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        if order.user_id != user.id and user.role not in ["admin", "staff"]:
+            raise HTTPException(status_code=403, detail="You don't own this order")
+
+        # Amount in smallest currency unit (KES requires x100 conversion)
+        amount = int(order.total_amount * 100)
+
+        intent = stripe.PaymentIntent.create(
+            amount=amount,
+            currency="kes",
+            metadata={"order_id": str(order.id), "user_id": str(user.id)},
+            payment_method_types=["card"],
+        )
+
+        return {"client_secret": intent.client_secret, "payment_intent_id": intent.id}
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stripe-webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    try:
+        if STRIPE_WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        else:
+            event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
+
+        if event.type == "payment_intent.succeeded":
+            payment_intent = event.data.object
+            order_id = payment_intent.metadata.get("order_id")
+            if order_id:
+                order = db.query(Order).filter(Order.id == int(order_id)).first()
+                if order and order.payment_status != "paid":
+                    order.status = "paid"
+                    order.payment_status = "paid"
+                    payment_exists = db.query(Payment).filter(Payment.provider_reference == payment_intent.id).first()
+                    if not payment_exists:
+                        payment = Payment(
+                            order_id=order.id,
+                            user_id=order.user_id,
+                            provider="stripe",
+                            method="card",
+                            status="completed",
+                            amount=order.total_amount,
+                            currency="KES",
+                            provider_reference=payment_intent.id,
+                        )
+                        db.add(payment)
+                    db.commit()
+                    print(f"✅ Order {order_id} marked as paid via Stripe webhook")
+
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/orders", response_model=list[OrderRead])

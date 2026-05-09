@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BidhaaHub - Inventory + Sales + Delivery</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root {
       --bg: #f3efe6;
@@ -2690,6 +2691,26 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Stripe element styling */
+    .stripe-card-element {
+      background: transparent;
+      border: 1px solid var(--line);
+      padding: 12px;
+      border-radius: 10px;
+      color: var(--text);
+    }
+
+    .stripe-errors {
+      color: #fa755a;
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+
+    .place-order-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body class="theme-dark">
@@ -3012,7 +3033,7 @@
                 <div class="progress-step">4. Complete</div>
               </div>
 
-              <form id="checkoutForm" onsubmit="submitCheckout(event)">
+              <form id="checkoutForm" onsubmit="event.preventDefault(); createOrderAndPay();">
                 <div class="checkout-section">
                   <h3>Contact Information</h3>
                   <div class="form-row">
@@ -3101,33 +3122,13 @@
                 </div>
 
                 <div class="payment-section">
-                  <h4>Payment Method</h4>
-                  <div class="payment-options">
-                    <label class="payment-option">
-                      <input type="radio" name="payment_method" value="cash_on_delivery">
-                      <div class="payment-icon">💵</div>
-                      <span>Cash on Delivery</span>
-                    </label>
-                    <label class="payment-option">
-                      <input type="radio" name="payment_method" value="mpesa_daraja">
-                      <div class="payment-icon">📱</div>
-                      <span>M-Pesa</span>
-                    </label>
-                    <label class="payment-option">
-                      <input type="radio" name="payment_method" value="mock_card">
-                      <div class="payment-icon">💳</div>
-                      <span>Card (Test)</span>
-                    </label>
-                    <label class="payment-option">
-                      <input type="radio" name="payment_method" value="paypal">
-                      <div class="payment-icon">🅿️</div>
-                      <span>PayPal</span>
-                    </label>
-                  </div>
+                  <h4>Payment</h4>
+                  <div id="card-element" class="stripe-card-element"></div>
+                  <div id="card-errors" class="stripe-errors" role="alert"></div>
                 </div>
 
-                <button class="place-order-btn" onclick="submitCheckout(event)">
-                  Place Order
+                <button class="place-order-btn" id="submit-payment-btn">
+                  Pay Now
                 </button>
 
                 <p class="secure-notice">
@@ -3777,6 +3778,127 @@
 
   let selectedShopCategory = 'all';
 
+  // ===== STRIPE CLIENT CONFIG =====
+  const STRIPE_PUBLISHABLE_KEY = "pk_test_51TUjn3PzuN7sZYAAMw2XUgtW1YfE8mYwBeHrxwysiZwYz1Ovv1sjweStIv81DPOSLqJDPfQJhxdT2kYgBkFNXu6c00Z5blkUWE";
+  let stripeClient = null;
+  let stripeElements = null;
+  let cardElement = null;
+  let currentOrderId = null;
+
+  function initStripe() {
+    if (!window.Stripe) return;
+    if (!STRIPE_PUBLISHABLE_KEY || !STRIPE_PUBLISHABLE_KEY.startsWith('pk_')) {
+      throw new Error('Invalid Stripe publishable key. Use pk_test/pk_live on frontend. rk_/sk_ keys are backend-only.');
+    }
+    if (!stripeClient) stripeClient = Stripe(STRIPE_PUBLISHABLE_KEY);
+  }
+
+  function initStripeElements() {
+    if (!stripeClient) initStripe();
+    if (!stripeClient) return;
+    if (cardElement) return; // already initialized
+
+    stripeElements = stripeClient.elements();
+    cardElement = stripeElements.create('card', {
+      style: {
+        base: {
+          color: '#32325d',
+          fontFamily: '"Segoe UI", "Trebuchet MS", Arial, sans-serif',
+          fontSmoothing: 'antialiased',
+          fontSize: '16px',
+          '::placeholder': { color: '#aab7c4' }
+        },
+        invalid: { color: '#fa755a', iconColor: '#fa755a' }
+      }
+    });
+
+    const mountPoint = document.getElementById('card-element');
+    if (mountPoint) {
+      cardElement.mount('#card-element');
+      cardElement.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) displayError.textContent = event.error.message;
+        else displayError.textContent = '';
+        updateCheckoutSummary();
+      });
+    }
+  }
+
+  async function createOrderAndPay() {
+    const submitBtn = document.getElementById('submit-payment-btn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Processing...'; }
+
+    try {
+      if (cartItems.length === 0) throw new Error('Your cart is empty!');
+
+      const deliveryMethod = document.querySelector('input[name="delivery_method"]:checked');
+      if (!deliveryMethod) throw new Error('Please select a delivery method');
+
+      const deliveryFee = getCheckoutDeliveryFee(deliveryMethod.value);
+      const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price || item.unit_price || 0) * Number(item.quantity || 0)), 0);
+      const total = subtotal + deliveryFee;
+
+      const payload = {
+        customer_name: document.getElementById('checkoutName')?.value || currentUser?.full_name || '',
+        customer_phone: document.getElementById('checkoutPhone')?.value || '',
+        customer_email: document.getElementById('checkoutEmail')?.value || currentUser?.email || '',
+        delivery_address: document.getElementById('checkoutAddress')?.value || '',
+        payment_method: 'stripe',
+        delivery_method: deliveryMethod.value,
+        items: cartItems.map(item => ({ product_id: item.id, quantity: item.quantity }))
+      };
+
+      if (!payload.customer_name || !payload.delivery_address) throw new Error('Please fill in your name and delivery address');
+
+      // Create order first
+      const orderResponse = await fetch(`${API_URL}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+        body: JSON.stringify(payload)
+      });
+
+      const orderData = await orderResponse.json();
+      if (!orderResponse.ok) throw new Error(orderData.detail || 'Failed to create order');
+      currentOrderId = orderData.id;
+
+      // Create payment intent
+      const paymentResponse = await fetch(`${API_URL}/api/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+        body: JSON.stringify({ order_id: currentOrderId })
+      });
+
+      const paymentData = await paymentResponse.json();
+      if (!paymentResponse.ok) throw new Error(paymentData.detail || 'Failed to initialize payment');
+
+      // Confirm card payment
+      if (!stripeClient || !cardElement) initStripeElements();
+      const result = await stripeClient.confirmCardPayment(paymentData.client_secret, {
+        payment_method: { card: cardElement, billing_details: { name: payload.customer_name, email: payload.customer_email } }
+      });
+
+      if (result.error) throw new Error(result.error.message);
+      if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+        alert(`✅ Payment successful! Order #${currentOrderId} confirmed.`);
+        cartItems = []; localStorage.removeItem('cart'); renderCart();
+        showPage('my-orders'); if (typeof loadMyOrders === 'function') loadMyOrders();
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Pay Now'; }
+    }
+  }
+
+  // Attach global click listener for the pay button
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'submit-payment-btn') {
+      e.preventDefault();
+      createOrderAndPay();
+    }
+  });
+
   function normalizeShopCategory(value) {
     const category = String(value || '').trim().toLowerCase();
     if (!category || category === 'all') return 'all';
@@ -4265,7 +4387,13 @@
     if (pageId === 'add-product') loadSupplierOptions();
     if (pageId === 'cart' || pageId === 'checkout') syncCartState();
     if (pageId === 'cart') renderCart();
-    if (pageId === 'checkout') renderCheckout();
+    if (pageId === 'checkout') {
+      renderCheckout();
+      // Initialize Stripe Elements after render
+      setTimeout(() => {
+        if (document.getElementById('card-element')) initStripeElements();
+      }, 100);
+    }
     if (pageId === 'orders') loadAdminOrders();
     if (pageId === 'my-orders') {
       startCustomerOrdersRefresh();
@@ -5839,7 +5967,7 @@
     }
 
     // Setup checkout summary listeners
-    document.querySelectorAll('input[name="delivery_method"], input[name="payment_method"]').forEach(input => {
+    document.querySelectorAll('input[name="delivery_method"]').forEach(input => {
       input.addEventListener('change', updateCheckoutSummary);
     });
 
