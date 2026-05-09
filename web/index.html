@@ -910,6 +910,13 @@
       border-color: rgba(245, 158, 11, 0.5);
     }
 
+    .social-pill svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      fill: currentColor;
+    }
+
     .footer-copy {
       margin-top: 20px;
       padding-top: 18px;
@@ -2954,25 +2961,44 @@
       display: none;
     }
 
-    /* ABOUT + SUPPORT SECTIONS */
+    /* ABOUT + SUPPORT SECTIONS (modern video + support styles) */
     .about-section {
-      padding: 80px 40px;
+      position: relative;
+      padding: 120px 40px 100px;
       text-align: center;
-      background: rgba(255,255,255,0.03);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+      overflow: hidden;
     }
-    .about-section h2 { font-size: 2rem; color: #fff; margin-bottom: 20px; }
-    .about-section p { max-width: 800px; margin: 0 auto; font-size: 1.1rem; color: var(--muted); line-height: 1.6; }
+    .about-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.42;
+      filter: brightness(0.88) saturate(1.05);
+    }
+    .about-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11, 18, 32, 0.56);
+      backdrop-filter: blur(3px);
+      z-index: -1;
+    }
+    .about-content { max-width: 900px; margin: 0 auto; }
+    .about-content h2 { font-size: 2.6rem; color: #fff; margin-bottom: 20px; }
+    .about-content p { font-size: 1.2rem; color: #cbd5e1; line-height: 1.7; }
 
     .support-section { padding: 80px 40px; text-align: center; }
-    .support-section h2 { font-size: 2rem; color: #fff; margin-bottom: 20px; }
-    .support-section p { max-width: 800px; margin: 0 auto 40px; font-size: 1.1rem; color: var(--muted); }
-    .support-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
-    .support-card { background: var(--panel); padding: 25px; border-radius: 16px; border: 1px solid var(--line); box-shadow: var(--shadow); transition: 0.2s ease; }
-    .support-card:hover { transform: translateY(-5px); border-color: var(--accent); }
-    .support-card span { font-size: 2rem; display: block; margin-bottom: 12px; }
-    .support-card h3 { margin-bottom: 6px; color: #fff; }
+    .support-section h2 { font-size: 2.4rem; margin-bottom: 15px; color: #fff; }
+    .support-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; margin-top: 40px; }
+    .support-card { background: rgba(255,255,255,0.06); border-radius: 16px; padding: 25px; border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(4px); transition: 0.2s ease; }
+    .support-card:hover { transform: translateY(-6px); border-color: var(--accent); }
+    .support-card span { font-size: 2rem; margin-bottom: 12px; display: block; }
+    .support-card h3 { color: #fff; margin-bottom: 8px; }
+    .support-card p { color: #cbd5e1; }
 
     /* Order Summary Card */
     .checkout-card:last-child {
@@ -3108,7 +3134,7 @@
     </div>
     <div class="landing-header-actions">
       <button class="button-ghost" onclick="landingShowAuth('customer')">Shop</button>
-      <button class="button-ghost" onclick="landingShowAuth('admin')">Manage</button>
+      <button class="button-ghost" onclick="landingShowAuth('customer')">Sign In</button>
     </div>
   </header>
 
@@ -3244,6 +3270,44 @@
       </div>
     </div>
   </main>
+  <!-- ABOUT SECTION (Landing Page Only) -->
+  <section id="about" class="about-section">
+    <video class="about-video" autoplay muted loop playsinline>
+      <source src="assets/videos/about-bg.mp4" type="video/mp4">
+    </video>
+    <div class="about-overlay"></div>
+    <div class="about-content">
+      <h2>About BidhaaHub</h2>
+      <p>
+        BidhaaHub helps bring modern technology to everyday grocery shopping,
+        blending the convenience of online delivery with the trusted Mama Mboga experience.
+        We support stores with real‑time stock, order management, and fast doorstep delivery.
+      </p>
+    </div>
+  </section>
+  <!-- SUPPORT SECTION (Landing Page Only) -->
+  <section id="support" class="support-section">
+    <h2>Support</h2>
+    <p>Need help? Reach us any time. We're here for you.</p>
+    <div class="support-cards">
+      <div class="support-card">
+        <span>📧</span>
+        <h3>Email Us</h3>
+        <p>willykutar@gmail.com</p>
+      </div>
+      <div class="support-card">
+        <span>📞</span>
+        <h3>Call Us</h3>
+        <p>+254 792 063 636</p>
+      </div>
+      <div class="support-card">
+        <span>💬</span>
+        <h3>Chat Support</h3>
+        <p>9am – 9pm Daily</p>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <!-- AUTHENTICATION SHELL -->
@@ -3927,6 +3991,104 @@
             </div>
           </div>
         </section>
+
+        <!-- ABOUT PAGE (Workspace) -->
+        <section class="page" data-page="about">
+          <h2>About BidhaaHub</h2>
+          <div style="max-width: 800px; margin: 0 auto;">
+            <video style="width: 100%; max-height: 400px; border-radius: 8px; margin-bottom: 20px; object-fit: cover;" autoplay muted loop playsinline>
+              <source src="assets/videos/about-bg.mp4" type="video/mp4">
+            </video>
+            <div class="panel" style="padding: 30px;">
+              <p style="font-size: 1.1rem; line-height: 1.8; color: var(--muted);">
+                BidhaaHub helps bring modern technology to everyday grocery shopping,
+                blending the convenience of online delivery with the trusted Mama Mboga experience.
+                We support stores with real‑time stock, order management, and fast doorstep delivery.
+              </p>
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--line);">
+              <h3>Our Mission</h3>
+              <p style="line-height: 1.8; color: var(--muted);">
+                To empower small and medium grocery businesses with cutting-edge technology,
+                making it easier to manage inventory, process orders, and serve customers with excellence.
+              </p>
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--line);">
+              <h3>Our Vision</h3>
+              <p style="line-height: 1.8; color: var(--muted);">
+                A future where every grocery store, regardless of size, has access to world-class digital tools
+                to compete effectively in the modern marketplace.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SUPPORT PAGE (Workspace) -->
+        <section class="page" data-page="support">
+          <h2>Support & Contact</h2>
+          <div style="max-width: 900px; margin: 0 auto;">
+            <div class="panel" style="padding: 30px; margin-bottom: 20px;">
+              <p style="font-size: 1rem; color: var(--muted); margin-bottom: 20px;">
+                Need help? We're here for you. Reach out through any of these channels and we'll get back to you promptly.
+              </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+              <div class="panel" style="padding: 20px; text-align: center;">
+                <span style="font-size: 2rem; display: block; margin-bottom: 10px;">📧</span>
+                <h3>Email Us</h3>
+                <p style="color: var(--muted); margin-bottom: 10px;">Send us a message anytime</p>
+                <a href="mailto:willykutar@gmail.com" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+                  willykutar@gmail.com
+                </a>
+              </div>
+
+              <div class="panel" style="padding: 20px; text-align: center;">
+                <span style="font-size: 2rem; display: block; margin-bottom: 10px;">📞</span>
+                <h3>Call Us</h3>
+                <p style="color: var(--muted); margin-bottom: 10px;">Monday – Friday, 9am – 5pm</p>
+                <a href="tel:+254792063636" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+                  +254 792 063 636
+                </a>
+              </div>
+
+              <div class="panel" style="padding: 20px; text-align: center;">
+                <span style="font-size: 2rem; display: block; margin-bottom: 10px;">💬</span>
+                <h3>Live Chat</h3>
+                <p style="color: var(--muted); margin-bottom: 10px;">9am – 9pm Daily</p>
+                <p style="color: var(--muted); font-size: 0.95rem;">Coming soon - real-time support available</p>
+              </div>
+            </div>
+
+            <div class="panel" style="padding: 30px; margin-top: 30px; background: var(--bg-secondary);">
+              <h3>Frequently Asked Questions</h3>
+              <div style="margin-top: 20px;">
+                <details style="margin-bottom: 15px; padding: 15px; border-left: 3px solid var(--primary); background: var(--bg-primary); cursor: pointer;">
+                  <summary style="font-weight: 500; cursor: pointer;">How do I create an account?</summary>
+                  <p style="margin-top: 10px; color: var(--muted); line-height: 1.6;">
+                    Click "Sign In" to access the registration form. Fill in your details and create your account.
+                  </p>
+                </details>
+                <details style="margin-bottom: 15px; padding: 15px; border-left: 3px solid var(--primary); background: var(--bg-primary); cursor: pointer;">
+                  <summary style="font-weight: 500; cursor: pointer;">What payment methods do you accept?</summary>
+                  <p style="margin-top: 10px; color: var(--muted); line-height: 1.6;">
+                    We accept card payments via Stripe and M-Pesa via IntaSend. Cash on Delivery is also available in select areas.
+                  </p>
+                </details>
+                <details style="margin-bottom: 15px; padding: 15px; border-left: 3px solid var(--primary); background: var(--bg-primary); cursor: pointer;">
+                  <summary style="font-weight: 500; cursor: pointer;">How long does delivery take?</summary>
+                  <p style="margin-top: 10px; color: var(--muted); line-height: 1.6;">
+                    Standard delivery typically takes 24-48 hours. Express delivery (where available) can be 4-6 hours.
+                  </p>
+                </details>
+                <details style="margin-bottom: 15px; padding: 15px; border-left: 3px solid var(--primary); background: var(--bg-primary); cursor: pointer;">
+                  <summary style="font-weight: 500; cursor: pointer;">Can I track my order?</summary>
+                  <p style="margin-top: 10px; color: var(--muted); line-height: 1.6;">
+                    Yes! Visit the "My Orders" page to view detailed tracking information for all your orders.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -3946,14 +4108,25 @@
     </div>
     <div class="footer-links">
       <h4>Company</h4>
-        <a href="#about">About</a>
-        <a href="#support">Support</a>
+         <button type="button" class="footer-link-btn" onclick="handleFooterAbout()">About</button>
+         <button type="button" class="footer-link-btn" onclick="handleFooterSupport()">Support</button>
     </div>
     <div class="footer-links">
       <h4>Follow</h4>
-      <a href="#">Facebook</a>
-      <a href="#">Instagram</a>
-      <a href="#">LinkedIn</a>
+      <div class="social-row">
+        <a class="social-pill" href="#" aria-label="Facebook" title="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 22v-8h2.7l.4-3h-3.1V8.2c0-.9.3-1.5 1.6-1.5H16.8V4a25 25 0 0 0-2.7-.1c-2.7 0-4.6 1.6-4.6 4.5V11H7v3h2.5v8h4z"/></svg>
+        </a>
+        <a class="social-pill" href="#" aria-label="Instagram" title="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5zM17.8 6.2a1.2 1.2 0 1 1-1.2 1.2 1.2 1.2 0 0 1 1.2-1.2z"/></svg>
+        </a>
+        <a class="social-pill" href="#" aria-label="TikTok" title="TikTok">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 3c.6 2.6 2.2 4.1 4.5 4.3v3.2c-1.5.1-2.9-.3-4.1-1v5.5c0 3.7-3 6.5-6.6 6.5S4 18.7 4 15.2s2.9-6.2 6.3-6.2c.3 0 .6 0 .9.1v3.4a3 3 0 0 0-.9-.1 2.9 2.9 0 1 0 2.1 5V3h4.1z"/></svg>
+        </a>
+        <a class="social-pill" href="#" aria-label="X" title="X">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 3H21l-7.2 8.3L22 21h-6.7l-5.2-6.1L5 21H3l7.7-8.8L2.5 3h6.8l4.8 5.6L18.9 3zm-1.2 16h1.8L8.4 4.9H6.5L17.7 19z"/></svg>
+        </a>
+      </div>
     </div>
   </div>
   <div class="footer-bottom">
@@ -3961,37 +4134,6 @@
   </div>
 </footer>
  
-<!-- ABOUT + SUPPORT SECTIONS (inserted before footer) -->
-<section id="about" class="about-section">
-  <h2>About BidhaaHub</h2>
-  <p>
-    BidhaaHub is a modern grocery platform that blends technology with the
-    traditional Mama Mboga experience. We help shops manage inventory,
-    customers order fresh produce online, and everyone enjoy fast, reliable delivery.
-  </p>
-</section>
-
-<section id="support" class="support-section">
-  <h2>Support</h2>
-  <p>If you need help with anything, reach out anytime. We're here for your store, your customers, and your growth.</p>
-  <div class="support-options">
-      <div class="support-card">
-        <span>📞</span>
-        <h3>Call Us</h3>
-        <p>+254 7xx xxx xxx</p>
-      </div>
-      <div class="support-card">
-        <span>💬</span>
-        <h3>Chat Support</h3>
-        <p>Available 9am – 9pm</p>
-      </div>
-      <div class="support-card">
-        <span>📧</span>
-        <h3>Email</h3>
-        <p>support@bidhaahub.com</p>
-      </div>
-  </div>
-</section>
 <!-- PRODUCT DETAIL MODAL -->
 <div class="modal" id="productModal">
   <div class="modal-content">
@@ -4821,6 +4963,25 @@
   }
 
   // ===== AUTH FUNCTIONS =====
+  async function readJsonResponse(response) {
+    const contentType = response.headers.get('content-type') || '';
+    const responseText = await response.text();
+
+    if (contentType.includes('application/json')) {
+      try {
+        return JSON.parse(responseText || '{}');
+      } catch (_) {
+        return { detail: responseText || 'Invalid JSON response from server' };
+      }
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (_) {
+      return { detail: responseText || 'Server returned a non-JSON response' };
+    }
+  }
+
   async function handleLogin(e, role) {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -4833,7 +4994,7 @@
           password: formData.get('password')
         })
       });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       if (response.ok) {
         currentToken = data.access_token;
         currentUser = data.user;
@@ -4866,7 +5027,7 @@
       if (response.ok) {
         alert('Account created! Please log in.');
       } else {
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         alert('Registration failed: ' + (data.detail || 'Unknown error'));
       }
     } catch (err) {
@@ -5037,6 +5198,32 @@
       btn.classList.toggle('active', btn.dataset.customerPage === pageId);
     });
   }
+
+    function handleFooterAbout() {
+      // If user is logged in, show About page in workspace
+      if (currentUser && currentUser.id) {
+        showPage('about');
+      } else {
+        // If on landing page, scroll to About section
+        const aboutSection = document.getElementById('about');
+        if (aboutSection) {
+          aboutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+
+    function handleFooterSupport() {
+      // If user is logged in, show Support page in workspace
+      if (currentUser && currentUser.id) {
+        showPage('support');
+      } else {
+        // If on landing page, scroll to Support section
+        const supportSection = document.getElementById('support');
+        if (supportSection) {
+          supportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
 
   function getSupplierName(supplierId) {
     const supplier = supplierDirectory.find(item => Number(item.id) === Number(supplierId));

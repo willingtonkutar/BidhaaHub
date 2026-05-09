@@ -176,6 +176,10 @@ def require_roles(*allowed_roles: str):
     return dependency
 
 
+def user_to_read(user: User) -> UserRead:
+    return UserRead.model_validate(user)
+
+
 def seed_default_data() -> None:
     db = SessionLocal()
     try:
