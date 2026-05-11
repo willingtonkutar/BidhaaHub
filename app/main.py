@@ -13,7 +13,12 @@ if __package__ is None or __package__ == "":
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, inspect, text
 from sqlalchemy.orm import Session
@@ -30,6 +35,7 @@ from app.schemas import (
     CheckoutCreate,
     DashboardSummary,
     OrderStatusUpdate,
+    ForceMarkPaidRequest,
     OrderRead,
     PaymentInitiate,
     PaymentRead,
@@ -51,6 +57,8 @@ from app.schemas import (
 from app.security import create_access_token, decode_access_token, hash_password, verify_password
 import stripe
 from intasend import APIService
+
+GATEWAY_PAYMENT_METHODS = {"stripe", "intasend_mpesa", "mpesa_daraja", "paypal"}
 
 Base.metadata.create_all(bind=engine)
 
@@ -799,9 +807,63 @@ def update_order_status(
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
 
+    method = str(order.payment_method or "").strip().lower()
+    is_gateway_order = method in GATEWAY_PAYMENT_METHODS
+
+    if payload.status == "paid" and is_gateway_order:
+        raise HTTPException(
+            status_code=400,
+            detail="This order uses gateway-confirmed payment. Use gateway callback or admin force-mark-paid with reason.",
+        )
+
     order.status = payload.status
     if payload.status == "paid":
         order.payment_status = "paid"
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@app.post("/orders/{order_id}/force-mark-paid", response_model=OrderRead)
+def force_mark_order_paid(
+    order_id: int,
+    payload: ForceMarkPaidRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("admin")),
+) -> Order:
+    """Emergency-only admin override to mark an order as paid with a mandatory reason."""
+    from app.models import OrderPaymentOverrideLog
+
+    order = db.get(Order, order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    old_payment_status = str(order.payment_status or "unpaid")
+    old_order_status = str(order.status or "pending")
+
+    if old_payment_status.lower() == "paid":
+        return order
+
+    reason = payload.reason.strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Reason is required")
+
+    order.payment_status = "paid"
+    if str(order.status or "").lower() in {"pending", "unpaid"}:
+        order.status = "paid"
+
+    db.add(
+        OrderPaymentOverrideLog(
+            order_id=order.id,
+            admin_user_id=user.id,
+            old_payment_status=old_payment_status,
+            new_payment_status=order.payment_status,
+            old_order_status=old_order_status,
+            new_order_status=order.status,
+            reason=reason,
+        )
+    )
+
     db.commit()
     db.refresh(order)
     return order
@@ -813,23 +875,158 @@ def mark_order_received(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Order:
-    """Allow customers to mark their orders as received after delivery."""
+    """Allow customers to complete delivery or pickup from their side."""
     order = db.get(Order, order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    # Only allow customers to mark their own orders as received
-    if user.role == "customer" and order.customer_id != user.id:
+    # Only allow customers to mark their own orders as completed
+    if user.role == "customer" and order.user_id != user.id:
         raise HTTPException(status_code=403, detail="You can only mark your own orders as received")
 
-    # Can only mark as received if currently out for delivery or preparing
-    if order.status not in ["preparing", "out_for_delivery", "out for delivery"]:
-        raise HTTPException(status_code=400, detail=f"Cannot mark order as received when status is '{order.status}'")
+    status_normalized = str(order.status or "").lower().replace(" ", "_")
+    delivery_method = str(order.delivery_method or "").lower()
+    is_pickup = "pickup" in delivery_method or "collect" in delivery_method
 
-    order.status = "received"
+    if is_pickup:
+        if status_normalized in {"picked_up", "delivered", "cancelled"}:
+            return order
+        if status_normalized not in {"pending", "paid", "preparing", "ready_for_pickup"}:
+            raise HTTPException(status_code=400, detail=f"Cannot mark pickup complete when status is '{order.status}'")
+        order.status = "picked_up"
+    else:
+        if status_normalized in {"delivered", "picked_up", "cancelled"}:
+            return order
+        if status_normalized not in {"preparing", "out_for_delivery", "paid"}:
+            raise HTTPException(status_code=400, detail=f"Cannot mark delivery complete when status is '{order.status}'")
+        order.status = "delivered"
+
     db.commit()
     db.refresh(order)
     return order
+
+
+@app.get("/orders/{order_id}/receipt.pdf")
+def download_order_receipt(order_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Generate a polished PDF receipt for the order and return it as a download."""
+    order = db.get(Order, order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Authorization: customers can only access their own orders
+    if getattr(user, "role", None) == "customer" and order.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only access your own orders")
+
+    buffer = BytesIO()
+    width, height = A4
+    c = canvas.Canvas(buffer, pagesize=A4)
+
+    left = 40
+    right = width - 40
+    y = height - 50
+
+    # Header card
+    c.setFillColor(colors.HexColor("#0f172a"))
+    c.roundRect(left, y - 105, right - left, 95, 12, fill=1, stroke=0)
+
+    # Optional brand logo
+    logo_path = Path(__file__).resolve().parents[1] / "web" / "assets" / "images" / "logo.png"
+    if logo_path.exists():
+        try:
+            logo = ImageReader(str(logo_path))
+            c.drawImage(logo, left + 14, y - 82, width=58, height=58, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(left + 82, y - 38, "ORDER RECEIPT")
+    c.setFont("Helvetica", 11)
+    c.drawString(left + 82, y - 58, f"Order #{order.id}")
+    c.drawString(left + 82, y - 74, f"Date: {order.created_at.strftime('%Y-%m-%d %H:%M') if getattr(order, 'created_at', None) else '-'}")
+
+    status_text = str(order.status or "pending").replace("_", " ").title()
+    c.setFillColor(colors.HexColor("#10b981"))
+    c.roundRect(right - 116, y - 78, 94, 28, 14, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawCentredString(right - 69, y - 60, status_text)
+
+    y -= 130
+
+    c.setFillColor(colors.HexColor("#111827"))
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(left, y, "Customer")
+    c.drawString(left + 260, y, "Payment")
+    y -= 18
+    c.setFont("Helvetica", 10)
+    c.drawString(left, y, f"Name: {order.customer_name or '-'}")
+    c.drawString(left + 260, y, f"Method: {order.payment_method or 'N/A'}")
+    y -= 14
+    c.drawString(left, y, f"Phone: {order.customer_phone or '-'}")
+    c.drawString(left + 260, y, f"Status: {order.payment_status or 'unpaid'}")
+    y -= 22
+
+    # Items table header
+    c.setFillColor(colors.HexColor("#f3f4f6"))
+    c.roundRect(left, y - 20, right - left, 20, 4, fill=1, stroke=0)
+    c.setFillColor(colors.HexColor("#1f2937"))
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(left + 8, y - 14, "Item")
+    c.drawString(left + 300, y - 14, "Qty")
+    c.drawString(left + 350, y - 14, "Unit")
+    c.drawRightString(right - 8, y - 14, "Total")
+    y -= 26
+
+    items = getattr(order, "items", []) or []
+    c.setFont("Helvetica", 10)
+    for item in items:
+        if y < 120:
+            c.showPage()
+            y = height - 60
+            c.setFillColor(colors.HexColor("#f3f4f6"))
+            c.roundRect(left, y - 20, right - left, 20, 4, fill=1, stroke=0)
+            c.setFillColor(colors.HexColor("#1f2937"))
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(left + 8, y - 14, "Item")
+            c.drawString(left + 300, y - 14, "Qty")
+            c.drawString(left + 350, y - 14, "Unit")
+            c.drawRightString(right - 8, y - 14, "Total")
+            y -= 26
+            c.setFont("Helvetica", 10)
+
+        c.setFillColor(colors.HexColor("#111827"))
+        c.drawString(left + 8, y, str(item.product_name)[:46])
+        c.drawString(left + 306, y, str(item.quantity))
+        c.drawString(left + 350, y, f"{item.unit_price:.2f}")
+        c.drawRightString(right - 8, y, f"{item.line_total:.2f} KES")
+        c.setStrokeColor(colors.HexColor("#e5e7eb"))
+        c.line(left, y - 6, right, y - 6)
+        y -= 18
+
+    y -= 8
+    summary_w = 220
+    summary_x = right - summary_w
+    c.setFillColor(colors.HexColor("#f9fafb"))
+    c.roundRect(summary_x, y - 66, summary_w, 66, 6, fill=1, stroke=0)
+    c.setFillColor(colors.HexColor("#111827"))
+    c.setFont("Helvetica", 10)
+    c.drawString(summary_x + 10, y - 18, "Subtotal")
+    c.drawRightString(right - 10, y - 18, f"{order.subtotal:.2f} KES")
+    c.drawString(summary_x + 10, y - 34, "Delivery")
+    c.drawRightString(right - 10, y - 34, f"{order.delivery_fee:.2f} KES")
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(summary_x + 10, y - 53, "Total")
+    c.drawRightString(right - 10, y - 53, f"{order.total_amount:.2f} KES")
+
+    c.setFillColor(colors.HexColor("#6b7280"))
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(width / 2, 28, "Thank you for shopping with BidhaaHub")
+
+    c.save()
+    buffer.seek(0)
+
+    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=receipt-{order.id}.pdf"})
 
 
 @app.get("/payments", response_model=list[PaymentRead])

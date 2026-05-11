@@ -223,7 +223,11 @@ class OrderRead(BaseModel):
 
 
 class OrderStatusUpdate(BaseModel):
-    status: str = Field(pattern="^(pending|paid|preparing|out_for_delivery|delivered|cancelled)$")
+    status: str = Field(pattern="^(pending|paid|preparing|ready_for_pickup|out_for_delivery|delivered|picked_up|cancelled)$")
+
+
+class ForceMarkPaidRequest(BaseModel):
+    reason: str = Field(min_length=8, max_length=500)
 
 
 class PaymentRead(BaseModel):

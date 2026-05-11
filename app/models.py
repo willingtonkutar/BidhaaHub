@@ -172,3 +172,17 @@ class Alert(Base):
     message: Mapped[str] = mapped_column(String(300), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     status: Mapped[str] = mapped_column(String(20), default="unread")
+
+
+class OrderPaymentOverrideLog(Base):
+    __tablename__ = "order_payment_override_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    admin_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    old_payment_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    new_payment_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    old_order_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    new_order_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

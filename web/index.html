@@ -2094,7 +2094,15 @@
       padding-bottom: 16px;
     }
 
-    .receipt-header .logo { font-size: 2.5rem; margin-bottom: 8px; }
+    .receipt-header .logo { margin-bottom: 8px; }
+
+    .receipt-logo-img {
+      width: 62px;
+      height: 62px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
 
     .receipt-header h2 { font-size: 1.6rem; margin: 8px 0; color: #1f2937; font-weight: 700; }
 
@@ -4730,7 +4738,12 @@
           cartItems = [];
           localStorage.removeItem('cart');
           renderCart();
-          showReceipt(confirmData.order || confirmData.order_id, true);
+            try {
+              showReceipt(confirmData.order || confirmData.order_id, true);
+            } catch (e) {
+              console.error('Error showing receipt after IntaSend confirm:', e);
+              alert('Payment confirmed but receipt could not be displayed. Please check My Orders.');
+            }
         } else if (state === 'failed' || state === 'canceled' || state === 'cancelled') {
           stopIntaSendPolling();
           setIntaSendStatus('❌ Payment failed or was cancelled. Please try again.', 'error');
@@ -4850,7 +4863,12 @@
         cartItems = [];
         localStorage.removeItem('cart');
         renderCart();
-        showReceipt(confirmData.order || confirmData.order_id, true);
+        try {
+          showReceipt(confirmData.order || confirmData.order_id, true);
+        } catch (e) {
+          console.error('Error showing receipt after confirm-payment:', e);
+          alert('Payment succeeded but receipt could not be displayed. Please visit My Orders to view it.');
+        }
       }
     } catch (err) {
       console.error('Checkout error:', err);
@@ -6176,42 +6194,41 @@
       if (!container) return;
 
       if (orders.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--muted);">No orders yet.</p>';
+        container.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--muted);">No orders yet.</td></tr>';
         return;
       }
 
       container.innerHTML = `
-        <div class="table-card">
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Payment</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${orders.map(o => `
-                  <tr>
-                    <td><strong>#${o.id}</strong></td>
-                    <td>${new Date(o.created_at).toLocaleDateString()}</td>
-                    <td>${o.total_amount} KES</td>
-                    <td><span class="badge badge-${o.payment_status?.toLowerCase() || 'pending'}">${o.payment_status || 'Pending'}</span></td>
-                    <td><span class="badge badge-${o.status?.toLowerCase() || 'pending'}">${o.status || 'Pending'}</span></td>
-                    <td><button class="button-ghost button-small" onclick="showOrderDetail(${o.id})">View</button></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        ${orders.map(o => {
+          const fulfillment = getCustomerFulfillmentAction(o);
+          const itemsCount = Array.isArray(o.items) ? o.items.reduce((sum, it) => sum + (it.quantity || 0), 0) : 0;
+          return `
+            <tr>
+              <td><strong>#${o.id}</strong></td>
+              <td>${new Date(o.created_at).toLocaleDateString()}</td>
+              <td>${itemsCount}</td>
+              <td>${o.total_amount} KES</td>
+              <td><span class="badge badge-${o.status?.toLowerCase() || 'pending'}">${o.status || 'Pending'}</span></td>
+              <td><span class="badge badge-${o.payment_status?.toLowerCase() || 'pending'}">${o.payment_status || 'Pending'}</span></td>
+              <td>
+                <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                  <button class="button-ghost button-small" onclick="showOrderDetail(${o.id})">View</button>
+                  <button class="button-ghost button-small" onclick="downloadReceiptPDF(${o.id})">Receipt</button>
+                  ${fulfillment ? `<button class="button button-small" onclick="markOrderReceived(${o.id}, '${fulfillment.mode}', this)">${fulfillment.label}</button>` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('')}
       `;
     } catch (err) {
       console.error('Error loading orders:', err);
+      const container = document.getElementById('myOrdersContainer');
+      if (container) {
+        container.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted);">Unable to load orders: ${String(err.message || err)}</td></tr>`;
+      } else {
+        alert('Unable to load orders: ' + String(err.message || err));
+      }
     }
   }
 
@@ -6357,18 +6374,96 @@
           <td><span class="badge badge-${o.payment_status?.toLowerCase() || 'pending'}">${o.payment_status || 'Pending'}</span></td>
           <td>
             <select onchange="updateOrderStatus(${o.id}, this.value)" class="button-ghost" style="padding: 4px;">
-              <option value="${o.status || 'pending'}" selected>${o.status || 'Pending'}</option>
-              <option value="paid">Paid</option>
-              <option value="preparing">Preparing</option>
-              <option value="out_for_delivery">Out for Delivery</option>
-              <option value="delivered">Delivered</option>
+              ${buildAdminStatusOptions(o)}
             </select>
           </td>
-          <td><button class="button-ghost button-small" onclick="showOrderDetail(${o.id})">View</button></td>
+          <td>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="button-ghost button-small" onclick="showOrderDetail(${o.id})">View</button>
+              ${showForceMarkPaidButton(o)}
+            </div>
+          </td>
         </tr>
       `).join('');
     } catch (err) {
       console.error('Error loading orders:', err);
+    }
+  }
+
+  function isGatewayPaymentMethod(method) {
+    const value = String(method || '').toLowerCase();
+    return ['stripe', 'intasend_mpesa', 'mpesa_daraja', 'paypal'].includes(value);
+  }
+
+  function titleizeStatus(status) {
+    return String(status || 'pending').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+  }
+
+  function buildAdminStatusOptions(order) {
+    const current = String(order?.status || 'pending');
+    const currentNormalized = current.toLowerCase();
+    const canSetPaidManually = !isGatewayPaymentMethod(order?.payment_method);
+
+    const statuses = ['pending', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'delivered', 'picked_up', 'cancelled'];
+    if (canSetPaidManually) {
+      statuses.splice(1, 0, 'paid');
+    }
+
+    if (!statuses.includes(currentNormalized)) {
+      statuses.unshift(currentNormalized);
+    }
+
+    return statuses.map(status => {
+      const selected = status === currentNormalized ? 'selected' : '';
+      return `<option value="${status}" ${selected}>${titleizeStatus(status)}</option>`;
+    }).join('');
+  }
+
+  function showForceMarkPaidButton(order) {
+    const paymentStatus = String(order?.payment_status || '').toLowerCase();
+    if (!isGatewayPaymentMethod(order?.payment_method) || paymentStatus === 'paid') {
+      return '';
+    }
+    return `<button class="button-secondary button-small" onclick="forceMarkPaid(${order.id})">Force Mark Paid</button>`;
+  }
+
+  async function forceMarkPaid(orderId) {
+    if (!currentToken) {
+      alert('Please login again.');
+      return;
+    }
+
+    const reason = prompt('Emergency override reason (required):');
+    if (reason === null) return;
+    const trimmed = String(reason).trim();
+    if (trimmed.length < 8) {
+      alert('Please provide a clear reason (at least 8 characters).');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/orders/${orderId}/force-mark-paid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: JSON.stringify({ reason: trimmed })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert('Unable to force-mark paid: ' + getApiErrorMessage(data, 'Unknown error'));
+        return;
+      }
+
+      alert('Order payment status updated to paid (audit logged).');
+      await loadAdminOrders();
+      if (document.querySelector('main .page.active')?.dataset.page === 'my-orders') {
+        await loadMyOrders();
+      }
+    } catch (err) {
+      alert('Error force-marking paid: ' + err.message);
     }
   }
 
@@ -6707,12 +6802,17 @@
       `;
     }
 
+    const statusText = (order.status || order.payment_status || 'pending').toString().replace(/_/g, ' ').toUpperCase();
+    const statusBadgeHTML = `<div class="status-badge">${statusText}</div>`;
+
     content.innerHTML = `
       <div class="receipt-container">
         <div class="receipt-header">
-          <div class="logo">📦</div>
+          <div class="logo">
+            <img class="receipt-logo-img" src="/assets/images/logo.png" alt="BidhaaHub logo" onerror="this.style.display='none'; this.parentElement.textContent='📦';" />
+          </div>
           <h2>ORDER RECEIPT</h2>
-          <div class="status-badge">✓ Payment Confirmed</div>
+          ${statusBadgeHTML}
         </div>
 
         <div class="receipt-section">
@@ -6765,7 +6865,7 @@
           </div>
           <div class="receipt-item">
             <span>Payment Status</span>
-            <span style="color: var(--accent); font-weight: 600;">✓ PAID</span>
+            <span style="color: var(--accent); font-weight: 600;">${(order.payment_status || '').toUpperCase() || 'PENDING'}</span>
           </div>
         </div>
 
@@ -6779,9 +6879,10 @@
         </div>
 
         <div class="receipt-actions">
-          <button class="btn-download" onclick="printReceipt()">📥 Download Receipt (PDF)</button>
+          <button class="btn-download" onclick="downloadReceiptPDF(${order.id})">📥 Download Receipt (PDF)</button>
           <button class="btn-close" onclick="closeModal('receiptModal'); ${isPostPayment ? 'showPage(\'my-orders\'); loadMyOrders();' : ''}">Close</button>
         </div>
+        ${buildOrderActionButtons(order)}
       </div>
     `;
     modal.classList.add('active');
@@ -6791,32 +6892,92 @@
     window.print();
   }
 
-  function buildOrderActionButtons(order) {
-    const isCustomer = currentUser?.role === 'customer';
-    const status = order.status?.toLowerCase() || 'pending';
-    const deliveryMethod = order.delivery_method?.toLowerCase() || '';
-    const isDelivery = deliveryMethod.includes('delivery') || deliveryMethod.includes('home');
-
-    let actionHTML = '';
-
-    if (isCustomer && isDelivery && (status === 'out for delivery' || status === 'preparing')) {
-      actionHTML = `
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);">
-          <button class="button" onclick="markOrderReceived(${order.id})" style="width: 100%;">
-            ✓ Mark as Received
-          </button>
-          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px; text-align: center;">
-            Click when you receive your delivery
-          </p>
-        </div>
-      `;
+  async function downloadReceiptPDF(orderId) {
+    try {
+      const resp = await fetch(`${API_URL}/orders/${orderId}/receipt.pdf`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      });
+      if (!resp.ok) {
+        let errText = 'Could not download PDF';
+        try { const err = await resp.json(); errText = err.detail || errText; } catch(_){}
+        alert('Error: ' + errText);
+        return;
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Error downloading PDF:', e);
+      alert('Error downloading PDF: ' + e.message);
     }
-
-    return actionHTML;
   }
 
-  async function markOrderReceived(orderId) {
-    if (!confirm('Mark this order as received?')) return;
+  function getCustomerFulfillmentAction(order) {
+    const isCustomer = currentUser?.role === 'customer';
+    if (!isCustomer) return null;
+
+    const status = (order.status || 'pending').toString().toLowerCase();
+    const normalizedStatus = status.replace(/\s+/g, '_');
+    const deliveryMethod = order.delivery_method?.toLowerCase() || '';
+    const isPickup = deliveryMethod.includes('pickup') || deliveryMethod.includes('collect');
+    const isDelivery = !isPickup;
+
+    if (['delivered', 'picked_up', 'cancelled'].includes(normalizedStatus)) {
+      return null;
+    }
+
+    if (isPickup && ['pending', 'paid', 'preparing', 'ready_for_pickup'].includes(normalizedStatus)) {
+      return {
+        mode: 'pickup',
+        label: 'Mark Picked Up',
+        helper: 'Click after you collect your order at pickup.'
+      };
+    }
+
+    if (isDelivery && ['paid', 'preparing', 'out_for_delivery'].includes(normalizedStatus)) {
+      return {
+        mode: 'delivery',
+        label: 'Mark Delivered',
+        helper: 'Click once your delivery arrives.'
+      };
+    }
+
+    return null;
+  }
+
+  function buildOrderActionButtons(order) {
+    const action = getCustomerFulfillmentAction(order);
+    if (!action) return '';
+
+    return `
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);">
+        <button class="button" onclick="markOrderReceived(${order.id}, '${action.mode}', this)" style="width: 100%;">
+          ✓ ${action.label}
+        </button>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px; text-align: center;">
+          ${action.helper}
+        </p>
+      </div>
+    `;
+  }
+
+  async function markOrderReceived(orderId, mode = 'delivery', buttonEl = null) {
+    const actionLabel = mode === 'pickup' ? 'picked up' : 'delivered';
+    if (!confirm(`Mark this order as ${actionLabel}?`)) return;
+
+    if (buttonEl) {
+      buttonEl.disabled = true;
+      buttonEl.dataset.previousText = buttonEl.textContent;
+      buttonEl.textContent = 'Updating...';
+      buttonEl.style.opacity = '0.7';
+      buttonEl.style.cursor = 'not-allowed';
+    }
 
     try {
       const response = await fetch(`${API_URL}/orders/${orderId}/mark-received`, {
@@ -6829,13 +6990,32 @@
 
       const data = await response.json();
       if (response.ok) {
-        alert('✓ Order marked as received. Thank you!');
+        alert(`✓ Order marked as ${actionLabel}. Thank you!`);
+        // If the receipt modal is open, refresh it so status updates on the receipt
+        try {
+          const receiptModal = document.getElementById('receiptModal');
+          if (receiptModal && receiptModal.classList.contains('active')) {
+            showReceipt(orderId);
+          }
+        } catch (_) {}
         closeModal('orderModal');
         if (typeof loadMyOrders === 'function') loadMyOrders();
       } else {
+        if (buttonEl) {
+          buttonEl.disabled = false;
+          buttonEl.textContent = buttonEl.dataset.previousText || buttonEl.textContent;
+          buttonEl.style.opacity = '';
+          buttonEl.style.cursor = '';
+        }
         alert('Error: ' + (data.detail || 'Could not update order'));
       }
     } catch (err) {
+      if (buttonEl) {
+        buttonEl.disabled = false;
+        buttonEl.textContent = buttonEl.dataset.previousText || buttonEl.textContent;
+        buttonEl.style.opacity = '';
+        buttonEl.style.cursor = '';
+      }
       console.error('Error marking order received:', err);
       alert('Error: ' + err.message);
     }
