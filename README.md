@@ -1,103 +1,420 @@
-# BidhaaHub Web App Project Guide
+<div align="center">
+  <img src="./web/assets/images/logo.png" alt="BidhaaHub Logo" width="120" height="120">
+  <h1>BidhaaHub</h1>
+  <p><strong>Smart Inventory Management for Fresh Produce & Grocery Stores</strong></p>
+  
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+  [![Python](https://img.shields.io/badge/Python-3.13-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+  [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-FCA121?style=flat-square)](https://www.sqlalchemy.org/)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+  [![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)]()
+</div>
 
-## 1. Project Vision
-BidhaaHub is a web-based grocery inventory management platform designed to reduce stockouts, cut wastage, and improve supplier coordination for small and medium grocery stores.
+---
 
-Core outcomes:
-- Real-time inventory visibility
-- Automatic low-stock and expiry alerts
-- Faster supplier ordering workflow
-- Better reporting for business decisions
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Payment Integration](#payment-integration)
+- [API Documentation](#api-documentation)
+- [Support](#support)
 
-### In Simple Terms
-BidhaaHub helps a store:
-- Know what products are in stock right now
-- Get warnings when items are running low
-- Track expiry dates so food does not go bad
-- Record sales and restocking automatically
-- Manage suppliers in one place
-- View reports to make better business decisions
-- Accept and track payments using API integrations
+---
 
-Instead of using paper or guesswork, the shop uses one web app to control products, reduce losses, and keep customers happy.
+## 🎯 Overview
 
-## 2. Product Scope (MVP First)
-Build the first version with only essential features, then expand.
+**BidhaaHub** is a comprehensive, all-in-one inventory and order management system built specifically for small and medium-sized grocery stores and fresh produce retailers in Kenya. It combines a powerful admin dashboard for inventory control with a modern customer-facing storefront for seamless shopping and delivery.
 
-### MVP Features
-- User authentication (Admin, Manager, Staff, Supplier)
-- Product and category management
-- Supplier management
-- Inventory transactions (restock, sale, adjustment, waste)
-- Low-stock alerts and expiry alerts
-- Dashboard with key metrics
-- Basic report exports (CSV)
-- API payment integration (diversified options: M-Pesa Daraja, card payments, bank transfer, and mobile wallets)
+### The Problem We Solve
+- **Stockouts** hurt revenue and frustrate customers
+- **Wastage** from expired stock eats into margins
+- **Manual tracking** is error-prone and time-consuming
+- **Fragmented payments** complicate reconciliation
+- **Poor visibility** makes business decisions guesswork
 
-### Post-MVP Features
-- Purchase order workflow and approval
-- Supplier portal with delivery confirmations
-- Barcode scanning integration
-- Multi-branch support
-- Forecasting and predictive reorder suggestions
+### Our Solution
+BidhaaHub centralizes everything: products, suppliers, orders, payments, and analytics—all in one web platform that works on desktop and mobile.
 
-## 3. Suggested Tech Stack
+---
 
-### Frontend
-- React + Vite
-- TypeScript
-- Tailwind CSS (or plain CSS modules)
-- TanStack Query for API state management
+## ✨ Key Features
 
-### Backend
-- FastAPI (Python)
-- SQLAlchemy ORM
-- Pydantic for validation
-- JWT authentication
+### 👨‍💼 For Store Managers & Admins
+- **📊 Real-Time Dashboard**
+  - KPI cards: total orders, revenue, pending orders, low-stock alerts
+  - 7-day sales trend chart
+  - Order status doughnut chart
+  - Recent orders list
 
-### Database
-- PostgreSQL (production)
-- SQLite (local development only)
+- **📦 Inventory Management**
+  - Add/edit/delete products with categories, prices, images
+  - Barcode support for future scanning integration
+  - Automatic low-stock alerts (<10 units)
+  - Expiry date tracking with automatic alerts
 
-### DevOps
-- Docker for local and deployment consistency
-- GitHub Actions for CI (tests, linting)
-- Render, Railway, or Fly.io for initial deployment
+- **🤝 Supplier Management**
+  - Maintain supplier contact information
+  - Track lead times for restocking
+  - Supplier ordering workflow
 
-## 3.1 Easy Way to Run the App on Windows
+- **📋 Order Management**
+  - View all customer orders with statuses
+  - Track payment status (Paid/Unpaid)
+  - Update fulfillment status (Preparing → Out for Delivery → Delivered)
+  - Emergency admin override for payment status (with audit logging)
 
-If you just want to start the project quickly:
+- **💳 Payment Settings**
+  - Stripe integration for card payments
+  - M-Pesa (via Daraja) for mobile money
+  - IntaSend for alternative gateways
+  - PayPal support (scaffolded)
+  - Cash on Delivery option
 
-1. Open a terminal in the project folder.
-2. Run the PowerShell launcher:
+- **📊 Reports & Analytics**
+  - Inventory value report
+  - Sales by transaction type
+  - Product-level insights
+  - Expiring/expired items tracking
 
-```powershell
-.\run.ps1
+### 🛒 For Customers
+- **🏪 Modern Shop Experience**
+  - Browse products by category
+  - Search and filter by name
+  - View product details (image, price, stock level, expiry)
+  - Real-time stock availability
+
+- **🛍️ Shopping Cart**
+  - Add/remove items
+  - Adjust quantities
+  - See live total with delivery fees
+
+- **💳 Flexible Checkout**
+  - Multiple payment methods (Card, M-Pesa, Cash on Delivery)
+  - Delivery method selection (Pickup, Courier, Rider)
+  - Real-time delivery fee calculation
+  - Pre-filled address from profile
+
+- **📦 Order Tracking**
+  - View all personal orders with status
+  - Download receipt as PDF
+  - Track fulfillment (preparing → delivered)
+  - Mark pickup/delivery completion
+
+- **📄 PDF Receipts**
+  - Professional receipt download
+  - Includes order details, items, costs, delivery info
+  - Support contact information
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | HTML5, CSS3, Vanilla JavaScript |
+| **Backend** | FastAPI (Python 3.13), SQLAlchemy ORM |
+| **Database** | SQLite (dev), PostgreSQL (production-ready) |
+| **Auth** | JWT tokens, role-based access control |
+| **Payments** | Stripe API, IntaSend, M-Pesa Daraja |
+| **PDF Generation** | ReportLab |
+| **Styling** | Dark theme with responsive design |
+| **Deployment** | Docker-ready, CORS-enabled |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Windows/Mac/Linux** with terminal access
+- **Python 3.13+** installed
+- **pip** package manager
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/BidhaaHub.git
+   cd BidhaaHub
+   ```
+
+2. **Create and activate virtual environment**
+   ```bash
+   python -m venv .venv
+   
+   # Windows
+   .venv\Scripts\activate
+   
+   # Mac/Linux
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the application**
+
+   **Windows (Easiest):**
+   ```powershell
+   .\run.ps1
+   ```
+   
+   Or with batch file:
+   ```batch
+   run.bat
+   ```
+
+   **Manual start:**
+   ```bash
+   cd BidhaaHub
+   uvicorn app.main:app --reload
+   ```
+
+5. **Open in browser**
+   ```
+   http://127.0.0.1:8000
+   ```
+
+---
+
+## 📖 Usage
+
+### First Time Setup
+
+#### Admin Account (Local Development)
+```
+Email: admin@bidhaahub.local
+Password: Admin123!
 ```
 
-If PowerShell scripts are blocked, use the batch file instead:
+### User Roles
 
-```bat
-run.bat
+| Role | Access | Permissions |
+|------|--------|-------------|
+| **Admin** | Full dashboard access | Create products, manage suppliers, view orders, payment settings, override payments (logged) |
+| **Customer** | Storefront only | Browse shop, create cart, checkout, view own orders, download receipts |
+
+### Typical Workflows
+
+#### For Store Manager
+1. ✅ Log in as admin
+2. 📦 Add products: Dashboard → Products → "Add Product"
+3. 🤝 Set up suppliers: Dashboard → Suppliers
+4. 📊 Review dashboard: KPIs, charts, low-stock alerts
+5. 📋 Process orders: Orders → Update status
+6. 💳 Configure payments: Payment Settings → Enter API keys
+7. 📊 Export reports: Reports → Download CSV
+
+#### For Customer
+1. 🔑 Register or log in as customer
+2. 🛍️ Browse products: Shop page
+3. 🛒 Add to cart: Click "Add to Cart" on products
+4. 💳 Checkout: Review items → Select delivery → Choose payment
+5. 💰 Pay: Use Stripe, M-Pesa, or Cash on Delivery
+6. 📦 Track order: My Orders → View status
+7. 📄 Download receipt: My Orders → "Download Receipt (PDF)"
+
+---
+
+## 🏗️ Architecture
+
+### Frontend Structure
+```
+BidhaaHub/web/
+├── index.html          # Single-page app (SPA)
+├── assets/
+│   ├── images/
+│   │   ├── logo.png
+│   │   └── popular/
+│   └── videos/
 ```
 
-The app will start on `http://127.0.0.1:8000`.
+### Backend Structure
+```
+BidhaaHub/app/
+├── main.py             # FastAPI routes & business logic
+├── models.py           # SQLAlchemy ORM models
+├── schemas.py          # Pydantic validation schemas
+├── database.py         # DB connection & session
+├── security.py         # JWT, password hashing
+└── __init__.py
+```
 
-### Role-Based Login
+### Database Models
+- **Users**: Admin, staff, customers with roles
+- **Products**: Inventory with categories, pricing, images
+- **Orders**: Customer orders with items, status
+- **Payments**: Payment records linked to orders
+- **Suppliers**: Vendor information
+- **CheckoutSessions**: Temporary shopping sessions
+- **Transactions**: Ledger of sales/restocks/adjustments
+- **Alerts**: Low-stock and expiry notifications
+- **DeliveryOptions**: Delivery methods & fees
 
-The web app now starts with a login chooser:
-- Customer: register or log in to browse the shop, cart, checkout, and My Orders
-- Admin/staff: log in to manage products, suppliers, orders, delivery, and payment settings
+---
 
-Default admin credentials for local development:
-- Email: `admin@bidhaahub.local`
-- Password: `Admin123!`
+## 💳 Payment Integration
 
-Payment support is scaffolded through `POST /payments/initiate` with provider codes for `cash_on_delivery`, `mpesa_daraja`, `paypal`, and `mock_card`.
+### Stripe (Card Payments)
+- ✅ Implemented and tested
+- Test card: `4242 4242 4242 4242`
+- Automatic payment confirmation
+- Webhook support for real-time updates
 
-If you want to start it manually, use:
+### IntaSend
+- ✅ Scaffolded - alternative payment gateway
+- Supports M-Pesa and other mobile money
 
-```powershell
+### Cash on Delivery
+- ✅ Implemented - no payment gateway needed
+- Manual order confirmation
+
+---
+
+## 📡 API Documentation
+
+### Authentication
+All protected endpoints require JWT token in header:
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+### Key Endpoints
+
+#### Auth
+- `POST /auth/register` - Create customer account
+- `POST /auth/login` - Login (customer or admin)
+- `GET /auth/me` - Get current user
+
+#### Storefront (Public)
+- `GET /storefront/products` - List products for shop
+
+#### Orders
+- `POST /checkout` - Create checkout session
+- `POST /orders` - Create order from checkout
+- `GET /orders/me` - Customer's own orders
+- `GET /orders/{id}/receipt.pdf` - Download receipt as PDF
+- `PATCH /orders/{id}/status` - Update order status
+- `PATCH /orders/{id}/mark-received` - Mark as picked up/delivered
+
+#### Products (Admin)
+- `POST /products` - Create product
+- `GET /products` - List products
+- `PATCH /products/{id}` - Update product
+- `DELETE /products/{id}` - Delete product
+
+#### Suppliers (Admin)
+- `POST /suppliers` - Create supplier
+- `GET /suppliers` - List suppliers
+- `PATCH /suppliers/{id}` - Update supplier
+- `DELETE /suppliers/{id}` - Delete supplier
+
+#### Payments (Admin)
+- `GET /payments` - List all payments
+- `POST /orders/{id}/force-mark-paid` - Emergency override (admin only, logged)
+
+#### Dashboard (Admin)
+- `GET /dashboard` - KPI summary
+- `GET /reports/summary` - Full reports
+
+Full API spec: `http://127.0.0.1:8000/docs` (Swagger UI)
+
+---
+
+## 🔐 Security Features
+
+- ✅ **Password Hashing**: Bcrypt with salt
+- ✅ **JWT Auth**: Stateless token-based authentication
+- ✅ **Role-Based Access Control**: Admin, staff, customer roles
+- ✅ **Request Validation**: Pydantic schemas on all inputs
+- ✅ **CORS Enabled**: Secure cross-origin requests
+- ✅ **Audit Logging**: Payment overrides logged for accountability
+- ✅ **Payment Gateway Enforcement**: Payments validated by external providers first
+
+---
+
+## 📊 Screenshots & UI
+
+### Admin Dashboard
+- KPI cards with key metrics
+- Real-time sales charts
+- Order management interface
+- Inventory alerts
+
+### Customer Storefront
+- Modern shop with categories
+- Product detail view
+- Shopping cart
+- Checkout with multiple payment options
+- Order tracking
+
+### Payment Confirmations
+- Professional PDF receipts
+- Download & print support
+- Delivery tracking info
+
+---
+
+## 🚀 Deployment
+
+### Docker
+```dockerfile
+# Build image
+docker build -t bidhaahub .
+
+# Run container
+docker run -p 8000:8000 bidhaahub
+```
+
+### Environment Variables (Production)
+```
+DATABASE_URL=postgresql://user:password@host/dbname
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+JWT_SECRET=your_secure_secret_key
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit changes: `git commit -m "Add my feature"`
+4. Push to branch: `git push origin feature/my-feature`
+5. Open a pull request
+
+---
+
+## 📞 Support
+
+- 📧 **Email**: willykutar@gmail.com
+- 📱 **Phone**: +254 792 063 636
+- 🕐 **Hours**: 9am - 9pm Daily
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🎉 Acknowledgments
+
+Built with ❤️ for Kenyan small business owners.
+
+**BidhaaHub** - Smart inventory management for a smarter retail.
+
+---
+
+**Version**: 1.0.0 | **Last Updated**: May 2026
 Set-Location "C:\Users\Administrator\Desktop\system development work\BidhaaHub"
 .\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload
