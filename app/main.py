@@ -711,6 +711,12 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)) -> AuthRespons
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    expected_portal = (payload.expected_portal or "").strip().lower()
+    if expected_portal == "customer" and user.role != "customer":
+        raise HTTPException(status_code=403, detail="This account uses the Admin login. Please switch to Admin login.")
+    if expected_portal == "admin" and user.role not in {"admin", "staff"}:
+        raise HTTPException(status_code=403, detail="This account uses the Customer login. Please switch to Customer login.")
+
     return AuthResponse(
         access_token=create_access_token(str(user.id), user.role, user.email),
         user=user_to_read(user),

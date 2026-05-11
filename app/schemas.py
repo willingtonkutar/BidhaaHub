@@ -45,6 +45,7 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     email: str = Field(min_length=5, max_length=120)
     password: str = Field(min_length=8, max_length=128)
+    expected_portal: str | None = Field(default=None, pattern="^(customer|admin)$")
 
 
 class UserRead(UserBase):

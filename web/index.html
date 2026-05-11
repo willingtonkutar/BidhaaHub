@@ -5216,7 +5216,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.get('email'),
-          password: formData.get('password')
+          password: formData.get('password'),
+          expected_portal: role === 'admin' ? 'admin' : 'customer'
         })
       });
       const data = await readJsonResponse(response);
@@ -5225,7 +5226,8 @@
         currentUser = data.user;
         localStorage.setItem('token', currentToken);
         localStorage.setItem('user', JSON.stringify(currentUser));
-        window.location.hash = POST_LOGIN_ROUTE_BY_ROLE[role === 'admin' ? 'admin' : 'customer'];
+        const loginRole = currentUser?.role === 'customer' ? 'customer' : 'admin';
+        window.location.hash = POST_LOGIN_ROUTE_BY_ROLE[loginRole];
         showWorkspace();
       } else {
         alert('Login failed: ' + (data.detail || 'Unknown error'));
