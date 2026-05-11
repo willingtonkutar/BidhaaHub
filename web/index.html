@@ -6884,7 +6884,7 @@
           <button class="btn-download" onclick="downloadReceiptPDF(${order.id})">📥 Download Receipt (PDF)</button>
           <button class="btn-close" onclick="closeModal('receiptModal'); ${isPostPayment ? 'showPage(\'my-orders\'); loadMyOrders();' : ''}">Close</button>
         </div>
-        ${buildOrderActionButtons(order)}
+        ${!isPostPayment ? buildOrderActionButtons(order) : ''}
       </div>
     `;
     modal.classList.add('active');
