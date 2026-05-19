@@ -149,6 +149,16 @@ DARAJA_CONFIG = {
 }
 
 
+def daraja_credentials_configured() -> bool:
+    """Return True if Daraja (Safaricom) credentials appear configured."""
+    return bool(
+        DARAJA_CONFIG.get("consumer_key")
+        and DARAJA_CONFIG.get("consumer_secret")
+        and DARAJA_CONFIG.get("shortcode")
+        and DARAJA_CONFIG.get("passkey")
+    )
+
+
 def get_current_user(authorization: str | None = Header(default=None, alias="Authorization"), db: Session = Depends(get_db)) -> User:
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization token is required")
@@ -732,7 +742,9 @@ def read_current_user(user: User = Depends(get_current_user)) -> UserRead:
 def payment_methods() -> list[dict[str, str]]:
     return [
         {"code": "cash_on_delivery", "name": "Cash on Delivery", "provider": "cash_on_delivery"},
-        {"code": "intasend_mpesa", "name": "IntaSend M-Pesa", "provider": "intasend_mpesa"},
+        {"code": "mpesa_daraja", "name": "M-Pesa Daraja", "provider": "mpesa_daraja"},
+        {"code": "paypal", "name": "PayPal", "provider": "paypal"},
+        {"code": "stripe", "name": "Card (Test)", "provider": "stripe"},
     ]
 
 
