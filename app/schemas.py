@@ -61,6 +61,21 @@ class AuthResponse(BaseModel):
     user: UserRead
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=120)
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    reset_token: str | None = None
+    expires_at: datetime | None = None
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=24, max_length=300)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class ProductBase(BaseModel):
     name: str = Field(min_length=2, max_length=150)
     category: str | None = None

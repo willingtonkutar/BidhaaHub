@@ -1,6 +1,8 @@
 import base64
+import hashlib
 import json
 import os
+import secrets
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import sys
@@ -24,7 +26,7 @@ from sqlalchemy import func, inspect, text
 from sqlalchemy.orm import Session
 
 from app.database import Base, SessionLocal, engine, get_db
-from app.models import Alert, CheckoutSession, DeliveryOption, Order, OrderItem, Payment, Product, Supplier, Transaction, User
+from app.models import Alert, CheckoutSession, DeliveryOption, Order, OrderItem, PasswordResetToken, Payment, Product, Supplier, Transaction, User
 from app.schemas import (
     AlertRead,
     AlertStatusUpdate,
@@ -34,6 +36,8 @@ from app.schemas import (
     DeliveryOptionRead,
     CheckoutCreate,
     DashboardSummary,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     OrderStatusUpdate,
     ForceMarkPaidRequest,
     OrderRead,
@@ -53,12 +57,15 @@ from app.schemas import (
     TransactionCreate,
     TransactionRead,
     ReportSummary,
+    ResetPasswordRequest,
 )
 from app.security import create_access_token, decode_access_token, hash_password, verify_password
 import stripe
 from intasend import APIService
 
 GATEWAY_PAYMENT_METHODS = {"stripe", "intasend_mpesa", "mpesa_daraja", "paypal"}
+PASSWORD_RESET_TOKEN_TTL_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "30"))
+ENABLE_DEV_RESET_TOKEN_RESPONSE = os.getenv("ENABLE_DEV_RESET_TOKEN_RESPONSE", "0") == "1"
 
 Base.metadata.create_all(bind=engine)
 
@@ -736,6 +743,77 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)) -> AuthRespons
 @app.get("/auth/me", response_model=UserRead)
 def read_current_user(user: User = Depends(get_current_user)) -> UserRead:
     return user_to_read(user)
+
+
+@app.post("/auth/forgot-password", response_model=ForgotPasswordResponse)
+def forgot_customer_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> ForgotPasswordResponse:
+    email = payload.email.strip().lower()
+    generic_message = "If a customer account exists for this email, password reset instructions are available."
+
+    user = db.query(User).filter(User.email == email, User.role == "customer").first()
+    if user is None:
+        return ForgotPasswordResponse(message=generic_message)
+
+    reset_token = secrets.token_urlsafe(36)
+    token_digest = hashlib.sha256(reset_token.encode("utf-8")).hexdigest()
+    expires_at = datetime.utcnow() + timedelta(minutes=PASSWORD_RESET_TOKEN_TTL_MINUTES)
+    requester_ip = request.client.host if request.client else None
+
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+    ).update({PasswordResetToken.used_at: datetime.utcnow()}, synchronize_session=False)
+
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_digest=token_digest,
+            expires_at=expires_at,
+            requested_ip=requester_ip,
+        )
+    )
+    db.commit()
+
+    # TODO: Send reset email when SMTP provider is configured.
+    if ENABLE_DEV_RESET_TOKEN_RESPONSE:
+        return ForgotPasswordResponse(message=generic_message, reset_token=reset_token, expires_at=expires_at)
+
+    return ForgotPasswordResponse(message=generic_message)
+
+
+@app.post("/auth/reset-password")
+def reset_customer_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> dict[str, str]:
+    token_digest = hashlib.sha256(payload.token.strip().encode("utf-8")).hexdigest()
+    reset_row = (
+        db.query(PasswordResetToken)
+        .filter(
+            PasswordResetToken.token_digest == token_digest,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .first()
+    )
+    if reset_row is None or reset_row.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user = db.get(User, reset_row.user_id)
+    if user is None or user.role != "customer":
+        raise HTTPException(status_code=400, detail="Invalid reset request")
+
+    user.password_hash = hash_password(payload.new_password)
+    reset_row.used_at = datetime.utcnow()
+
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+        PasswordResetToken.id != reset_row.id,
+    ).update({PasswordResetToken.used_at: datetime.utcnow()}, synchronize_session=False)
+
+    db.commit()
+    return {"message": "Password reset successful. You can now sign in."}
 
 
 @app.get("/payment-methods")

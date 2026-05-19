@@ -1096,12 +1096,6 @@
       cursor: pointer;
     }
 
-    .google-btn {
-      background: color-mix(in srgb, var(--panel-strong) 94%, #fff);
-      color: var(--ink);
-      border: 1px solid var(--line);
-    }
-
     .divider {
       display: flex;
       align-items: center;
@@ -1189,6 +1183,30 @@
       color: #7dd3fc;
       font-weight: 800;
       text-decoration: none;
+    }
+
+    .auth-secondary-links {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: -4px;
+    }
+
+    .auth-link-btn {
+      border: none;
+      background: transparent;
+      color: var(--accent-3);
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .auth-link-btn:hover {
+      color: var(--accent);
     }
 
     .auth-note {
@@ -3583,10 +3601,6 @@
       <h2>Welcome to BidhaaHub</h2>
       <p>Seamless shopping, tailored for you.</p>
 
-      <div class="social-login">
-        <button type="button" class="google-btn">Sign in securely with Google</button>
-      </div>
-
       <div class="divider">or</div>
 
       <form class="login-form" id="customerLoginForm" onsubmit="handleLogin(event, 'customer')">
@@ -3597,6 +3611,10 @@
         <div class="form-group">
           <label>Password</label>
           <input name="password" type="password" placeholder="••••••••" required />
+        </div>
+        <div class="auth-secondary-links">
+          <button type="button" class="auth-link-btn" onclick="handleCustomerForgotPassword()">Forgot password?</button>
+          <button type="button" class="auth-link-btn" onclick="handleCustomerResetPasswordWithToken()">Reset with token</button>
         </div>
         <button type="submit" class="login-btn">Sign In</button>
       </form>
@@ -5294,6 +5312,63 @@
       }
     } catch (err) {
       alert('Error: ' + err.message);
+    }
+  }
+
+  async function handleCustomerForgotPassword() {
+    const emailField = document.querySelector('#customerLoginForm input[name="email"]');
+    const suggestedEmail = String(emailField?.value || '').trim();
+    const email = window.prompt('Enter your customer account email to request a password reset token.', suggestedEmail);
+    if (!email) return;
+
+    try {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() })
+      });
+      const data = await readJsonResponse(response);
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to start password reset');
+      }
+
+      let notice = data.message || 'If the account exists, reset instructions are now available.';
+      if (data.reset_token) {
+        notice += `\n\nDEV token: ${data.reset_token}`;
+        if (data.expires_at) {
+          notice += `\nExpires at: ${data.expires_at}`;
+        }
+      }
+      alert(notice);
+    } catch (err) {
+      alert('Password reset request failed: ' + err.message);
+    }
+  }
+
+  async function handleCustomerResetPasswordWithToken() {
+    const token = window.prompt('Paste the reset token you received.');
+    if (!token) return;
+
+    const newPassword = window.prompt('Enter a new password (minimum 8 characters).');
+    if (!newPassword) return;
+    if (newPassword.length < 8) {
+      alert('Password must be at least 8 characters long.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token.trim(), new_password: newPassword })
+      });
+      const data = await readJsonResponse(response);
+      if (!response.ok) {
+        throw new Error(data.detail || 'Unable to reset password');
+      }
+      alert(data.message || 'Password reset successful. You can now sign in.');
+    } catch (err) {
+      alert('Password reset failed: ' + err.message);
     }
   }
 
