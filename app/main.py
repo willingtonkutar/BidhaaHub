@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from app.database import Base, SessionLocal, engine, get_db
 from app.models import Alert, CheckoutSession, DeliveryOption, Order, OrderItem, PasswordResetToken, Payment, Product, Supplier, Transaction, User
 from app.schemas import (
+    AdminOrderRead,
     AlertRead,
     AlertStatusUpdate,
     AuthResponse,
@@ -1853,12 +1854,12 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/orders", response_model=list[OrderRead])
+@app.get("/orders", response_model=list[AdminOrderRead])
 def list_orders(db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> list[Order]:
     return db.query(Order).order_by(Order.created_at.desc()).limit(200).all()
 
 
-@app.get("/orders/{order_id}", response_model=OrderRead)
+@app.get("/orders/{order_id}", response_model=AdminOrderRead)
 def get_order(order_id: int, db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))) -> Order:
     order = db.get(Order, order_id)
     if order is None:

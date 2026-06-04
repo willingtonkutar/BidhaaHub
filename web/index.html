@@ -6505,10 +6505,11 @@
       });
       const orders = await response.json();
       const tbody = document.getElementById('ordersTbody');
-      tbody.innerHTML = orders.map(o => `
+      tbody.innerHTML = orders
+        .map(o => `
         <tr>
           <td><strong>#${o.id}</strong></td>
-          <td>${o.customer_name}</td>
+          <td>${maskName(o.customer_name)}</td>
           <td>${o.total_amount} KES</td>
           <td><span class="badge badge-${o.payment_status?.toLowerCase() || 'pending'}">${o.payment_status || 'Pending'}</span></td>
           <td>
@@ -6519,11 +6520,11 @@
           <td>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="button-ghost button-small" onclick="showOrderDetail(${o.id})">View</button>
-              ${showForceMarkPaidButton(o)}
             </div>
           </td>
         </tr>
-      `).join('');
+      `)
+        .join('');
     } catch (err) {
       console.error('Error loading orders:', err);
     }
@@ -6538,32 +6539,42 @@
     return String(status || 'pending').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
   }
 
+  function maskName(name) {
+    if (!name) return '—';
+    try {
+      const parts = String(name).trim().split(' ');
+      const first = parts[0] || '';
+      if (!first) return '—';
+      return first.charAt(0).toUpperCase() + '***';
+    } catch (_) {
+      return '—';
+    }
+  }
+
   function buildAdminStatusOptions(order) {
     const current = String(order?.status || 'pending');
     const currentNormalized = current.toLowerCase();
-    const canSetPaidManually = !isGatewayPaymentMethod(order?.payment_method);
 
-    const statuses = ['pending', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'delivered', 'picked_up', 'cancelled'];
-    if (canSetPaidManually) {
-      statuses.splice(1, 0, 'paid');
-    }
+    // Restrict admin status options to essentials. Payment state should be
+    // controlled by payment callbacks or dedicated actions.
+    const statuses = ['pending', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
 
     if (!statuses.includes(currentNormalized)) {
       statuses.unshift(currentNormalized);
     }
 
-    return statuses.map(status => {
-      const selected = status === currentNormalized ? 'selected' : '';
-      return `<option value="${status}" ${selected}>${titleizeStatus(status)}</option>`;
-    }).join('');
+    return statuses
+      .map(status => {
+        const selected = status === currentNormalized ? 'selected' : '';
+        return `<option value="${status}" ${selected}>${titleizeStatus(status)}</option>`;
+      })
+      .join('');
   }
 
   function showForceMarkPaidButton(order) {
-    const paymentStatus = String(order?.payment_status || '').toLowerCase();
-    if (!isGatewayPaymentMethod(order?.payment_method) || paymentStatus === 'paid') {
-      return '';
-    }
-    return `<button class="button-secondary button-small" onclick="forceMarkPaid(${order.id})">Force Mark Paid</button>`;
+    // Force-mark-paid is an admin-only emergency action; hide by default
+    // to avoid accidental overrides. If needed, re-enable explicitly.
+    return '';
   }
 
   async function forceMarkPaid(orderId) {

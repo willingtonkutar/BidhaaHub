@@ -238,6 +238,24 @@ class OrderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AdminOrderRead(BaseModel):
+    id: int
+    customer_name: str
+    status: str
+    payment_method: str | None
+    payment_status: str
+    delivery_method: str | None
+    delivery_address: str | None
+    delivery_fee: float
+    subtotal: float
+    total_amount: float
+    created_at: datetime
+    updated_at: datetime
+    items: list[OrderItemRead]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OrderStatusUpdate(BaseModel):
     status: str = Field(pattern="^(pending|paid|preparing|ready_for_pickup|out_for_delivery|delivered|picked_up|cancelled)$")
 
