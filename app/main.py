@@ -1,4 +1,5 @@
 import base64
+import csv
 import hashlib
 import json
 import os
@@ -9,6 +10,7 @@ import sys
 from uuid import uuid4
 from urllib import error as urllib_error
 from urllib import request as urllib_request
+from io import StringIO
 
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -1951,4 +1953,378 @@ def report_summary(db: Session = Depends(get_db), user: User = Depends(require_r
         total_transactions=total_transactions,
         sales_total=round(float(sales_total), 2),
         restock_total=round(float(restock_total), 2),
+    )
+
+
+def _csv_response(filename: str, rows: list[list[object]]) -> StreamingResponse:
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    for row in rows:
+        writer.writerow(row)
+
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@app.get("/reports/sales.csv")
+def download_sales_report(
+    from_date: date | None = None,
+    to_date: date | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("admin", "staff")),
+):
+    report_from = from_date or date.today()
+    report_to = to_date or report_from
+    if report_to < report_from:
+        raise HTTPException(status_code=400, detail="End date must be on or after start date")
+
+    start_at = datetime.combine(report_from, datetime.min.time())
+    end_at = datetime.combine(report_to + timedelta(days=1), datetime.min.time())
+
+    transactions = (
+        db.query(Transaction)
+        .join(Product)
+        .filter(
+            Transaction.transaction_type == "sale",
+            Transaction.created_at >= start_at,
+            Transaction.created_at < end_at,
+        )
+        .order_by(Transaction.created_at.asc())
+        .all()
+    )
+
+    rows: list[list[object]] = [["Sale Date", "Transaction ID", "Product", "Quantity", "Unit Price", "Total Amount"]]
+    for transaction in transactions:
+        rows.append(
+            [
+                transaction.created_at.strftime("%Y-%m-%d %H:%M:%S") if transaction.created_at else "",
+                transaction.id,
+                getattr(transaction.product, "name", ""),
+                transaction.quantity,
+                f"{float(transaction.unit_price):.2f}",
+                f"{float(transaction.total_amount):.2f}",
+            ]
+        )
+
+    filename = f"sales-report-{report_from.isoformat()}-to-{report_to.isoformat()}.csv"
+    return _csv_response(filename, rows)
+
+
+@app.get("/reports/sales.pdf")
+def download_sales_report_pdf(
+    from_date: date | None = None,
+    to_date: date | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles("admin", "staff")),
+):
+    report_from = from_date or date.today()
+    report_to = to_date or report_from
+    if report_to < report_from:
+        raise HTTPException(status_code=400, detail="End date must be on or after start date")
+
+    start_at = datetime.combine(report_from, datetime.min.time())
+    end_at = datetime.combine(report_to + timedelta(days=1), datetime.min.time())
+
+    transactions = (
+        db.query(Transaction)
+        .join(Product)
+        .filter(
+            Transaction.transaction_type == "sale",
+            Transaction.created_at >= start_at,
+            Transaction.created_at < end_at,
+        )
+        .order_by(Transaction.created_at.asc())
+        .all()
+    )
+
+    total_sales = sum(float(transaction.total_amount) for transaction in transactions)
+    total_quantity = sum(int(transaction.quantity) for transaction in transactions)
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    left = 40
+    right = width - 40
+    y = height - 48
+
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.roundRect(left, y - 54, right - left, 44, 10, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(left + 14, y - 24, "SALES REPORT")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left + 14, y - 39, f"Date range: {report_from.isoformat()} to {report_to.isoformat()}")
+
+    y -= 78
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(left, y, "Summary")
+    pdf.setFont("Helvetica", 10)
+    y -= 16
+    pdf.drawString(left, y, f"Transactions: {len(transactions)}")
+    pdf.drawString(left + 180, y, f"Items sold: {total_quantity}")
+    pdf.drawString(left + 330, y, f"Total sales: {total_sales:.2f} KES")
+
+    y -= 24
+    pdf.setFillColor(colors.HexColor("#f3f4f6"))
+    pdf.roundRect(left, y - 18, right - left, 18, 4, fill=1, stroke=0)
+    pdf.setFillColor(colors.HexColor("#1f2937"))
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(left + 8, y - 12, "Date")
+    pdf.drawString(left + 132, y - 12, "Product")
+    pdf.drawString(left + 290, y - 12, "Qty")
+    pdf.drawString(left + 342, y - 12, "Unit Price")
+    pdf.drawRightString(right - 8, y - 12, "Total")
+    y -= 26
+
+    pdf.setFont("Helvetica", 9)
+    for transaction in transactions:
+        if y < 70:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFillColor(colors.HexColor("#f3f4f6"))
+            pdf.roundRect(left, y - 18, right - left, 18, 4, fill=1, stroke=0)
+            pdf.setFillColor(colors.HexColor("#1f2937"))
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(left + 8, y - 12, "Date")
+            pdf.drawString(left + 132, y - 12, "Product")
+            pdf.drawString(left + 290, y - 12, "Qty")
+            pdf.drawString(left + 342, y - 12, "Unit Price")
+            pdf.drawRightString(right - 8, y - 12, "Total")
+            y -= 26
+            pdf.setFont("Helvetica", 9)
+
+        pdf.setFillColor(colors.HexColor("#111827"))
+        pdf.drawString(left + 8, y, transaction.created_at.strftime("%Y-%m-%d") if transaction.created_at else "")
+        pdf.drawString(left + 132, y, str(getattr(transaction.product, "name", ""))[:28])
+        pdf.drawString(left + 290, y, str(transaction.quantity))
+        pdf.drawString(left + 342, y, f"{float(transaction.unit_price):.2f}")
+        pdf.drawRightString(right - 8, y, f"{float(transaction.total_amount):.2f} KES")
+        pdf.setStrokeColor(colors.HexColor("#e5e7eb"))
+        pdf.line(left, y - 6, right, y - 6)
+        y -= 18
+
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawRightString(right, 40, f"Grand Total: {total_sales:.2f} KES")
+    pdf.save()
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=sales-report-{report_from.isoformat()}-to-{report_to.isoformat()}.pdf"},
+    )
+
+
+@app.get("/reports/inventory.csv")
+def download_inventory_report(db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))):
+    products = db.query(Product).order_by(Product.name.asc()).all()
+
+    rows: list[list[object]] = [["Product", "Category", "Quantity", "Low Stock Threshold", "Unit Price", "Expiry Date", "Supplier"]]
+    for product in products:
+        rows.append(
+            [
+                product.name,
+                product.category or "",
+                product.quantity,
+                product.min_threshold,
+                f"{float(product.unit_price):.2f}",
+                product.expiry_date.isoformat() if product.expiry_date else "",
+                getattr(product.supplier, "name", "") if getattr(product, "supplier", None) else "",
+            ]
+        )
+
+    return _csv_response(f"inventory-report-{date.today().isoformat()}.csv", rows)
+
+
+@app.get("/reports/inventory.pdf")
+def download_inventory_report_pdf(db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))):
+    products = db.query(Product).order_by(Product.name.asc()).all()
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    left = 40
+    right = width - 40
+    y = height - 48
+
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.roundRect(left, y - 54, right - left, 44, 10, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(left + 14, y - 24, "INVENTORY REPORT")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left + 14, y - 39, f"Generated on: {date.today().isoformat()}")
+
+    y -= 78
+    total_stock = sum(int(product.quantity) for product in products)
+    low_stock = sum(1 for product in products if int(product.quantity) <= int(product.min_threshold))
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(left, y, "Summary")
+    pdf.setFont("Helvetica", 10)
+    y -= 16
+    pdf.drawString(left, y, f"Products: {len(products)}")
+    pdf.drawString(left + 150, y, f"Total stock units: {total_stock}")
+    pdf.drawString(left + 330, y, f"Low stock items: {low_stock}")
+
+    y -= 24
+    pdf.setFillColor(colors.HexColor("#f3f4f6"))
+    pdf.roundRect(left, y - 18, right - left, 18, 4, fill=1, stroke=0)
+    pdf.setFillColor(colors.HexColor("#1f2937"))
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(left + 8, y - 12, "Product")
+    pdf.drawString(left + 160, y - 12, "Category")
+    pdf.drawString(left + 270, y - 12, "Qty")
+    pdf.drawString(left + 315, y - 12, "Threshold")
+    pdf.drawString(left + 390, y - 12, "Unit Price")
+    pdf.drawRightString(right - 8, y - 12, "Expiry")
+    y -= 26
+
+    pdf.setFont("Helvetica", 9)
+    for product in products:
+        if y < 70:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFillColor(colors.HexColor("#f3f4f6"))
+            pdf.roundRect(left, y - 18, right - left, 18, 4, fill=1, stroke=0)
+            pdf.setFillColor(colors.HexColor("#1f2937"))
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(left + 8, y - 12, "Product")
+            pdf.drawString(left + 160, y - 12, "Category")
+            pdf.drawString(left + 270, y - 12, "Qty")
+            pdf.drawString(left + 315, y - 12, "Threshold")
+            pdf.drawString(left + 390, y - 12, "Unit Price")
+            pdf.drawRightString(right - 8, y - 12, "Expiry")
+            y -= 26
+            pdf.setFont("Helvetica", 9)
+
+        pdf.setFillColor(colors.HexColor("#111827"))
+        pdf.drawString(left + 8, y, str(product.name)[:24])
+        pdf.drawString(left + 160, y, str(product.category or "")[:16])
+        pdf.drawString(left + 270, y, str(product.quantity))
+        pdf.drawString(left + 315, y, str(product.min_threshold))
+        pdf.drawString(left + 390, y, f"{float(product.unit_price):.2f}")
+        pdf.drawRightString(right - 8, y, product.expiry_date.isoformat() if product.expiry_date else "-")
+        pdf.setStrokeColor(colors.HexColor("#e5e7eb"))
+        pdf.line(left, y - 6, right, y - 6)
+        y -= 18
+
+    pdf.save()
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=inventory-report-{date.today().isoformat()}.pdf"},
+    )
+
+
+@app.get("/reports/delivery.csv")
+def download_delivery_report(db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))):
+    orders = db.query(Order).order_by(Order.created_at.desc()).all()
+
+    rows: list[list[object]] = [["Order ID", "Customer", "Delivery Method", "Delivery Address", "Status", "Payment Status", "Delivery Fee", "Total Amount", "Created At"]]
+    for order in orders:
+        rows.append(
+            [
+                order.id,
+                order.customer_name,
+                order.delivery_method or "",
+                order.delivery_address or "",
+                order.status,
+                order.payment_status,
+                f"{float(order.delivery_fee):.2f}",
+                f"{float(order.total_amount):.2f}",
+                order.created_at.strftime("%Y-%m-%d %H:%M:%S") if order.created_at else "",
+            ]
+        )
+
+    return _csv_response(f"delivery-report-{date.today().isoformat()}.csv", rows)
+
+
+@app.get("/reports/delivery.pdf")
+def download_delivery_report_pdf(db: Session = Depends(get_db), user: User = Depends(require_roles("admin", "staff"))):
+    orders = db.query(Order).order_by(Order.created_at.desc()).all()
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    left = 40
+    right = width - 40
+    y = height - 48
+
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.roundRect(left, y - 54, right - left, 44, 10, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(left + 14, y - 24, "DELIVERY REPORT")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left + 14, y - 39, f"Generated on: {date.today().isoformat()}")
+
+    y -= 78
+    delivered = sum(1 for order in orders if str(order.status or "").lower() == "delivered")
+    pending = sum(1 for order in orders if str(order.status or "").lower() not in {"delivered", "cancelled"})
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(left, y, "Summary")
+    pdf.setFont("Helvetica", 10)
+    y -= 16
+    pdf.drawString(left, y, f"Orders: {len(orders)}")
+    pdf.drawString(left + 150, y, f"Delivered: {delivered}")
+    pdf.drawString(left + 280, y, f"Pending: {pending}")
+
+    y -= 24
+    pdf.setFillColor(colors.HexColor("#f3f4f6"))
+    pdf.roundRect(left, y - 18, right - left, 18, 4, fill=1, stroke=0)
+    pdf.setFillColor(colors.HexColor("#1f2937"))
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(left + 8, y - 12, "Order")
+    pdf.drawString(left + 72, y - 12, "Customer")
+    pdf.drawString(left + 205, y - 12, "Method")
+    pdf.drawString(left + 290, y - 12, "Status")
+    pdf.drawString(left + 370, y - 12, "Fee")
+    pdf.drawRightString(right - 8, y - 12, "Created")
+    y -= 26
+
+    pdf.setFont("Helvetica", 9)
+    for order in orders:
+        if y < 70:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFillColor(colors.HexColor("#f3f4f6"))
+            pdf.roundRect(left, y - 18, right - left, 18, 4, fill=1, stroke=0)
+            pdf.setFillColor(colors.HexColor("#1f2937"))
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(left + 8, y - 12, "Order")
+            pdf.drawString(left + 72, y - 12, "Customer")
+            pdf.drawString(left + 205, y - 12, "Method")
+            pdf.drawString(left + 290, y - 12, "Status")
+            pdf.drawString(left + 370, y - 12, "Fee")
+            pdf.drawRightString(right - 8, y - 12, "Created")
+            y -= 26
+            pdf.setFont("Helvetica", 9)
+
+        pdf.setFillColor(colors.HexColor("#111827"))
+        pdf.drawString(left + 8, y, f"#{order.id}")
+        pdf.drawString(left + 72, y, str(order.customer_name)[:18])
+        pdf.drawString(left + 205, y, str(order.delivery_method or "")[:12])
+        pdf.drawString(left + 290, y, str(order.status or "")[:12])
+        pdf.drawString(left + 370, y, f"{float(order.delivery_fee):.2f}")
+        pdf.drawRightString(right - 8, y, order.created_at.strftime("%Y-%m-%d") if order.created_at else "")
+        pdf.setStrokeColor(colors.HexColor("#e5e7eb"))
+        pdf.line(left, y - 6, right, y - 6)
+        y -= 18
+
+    pdf.save()
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=delivery-report-{date.today().isoformat()}.pdf"},
     )
